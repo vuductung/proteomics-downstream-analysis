@@ -1,2 +1,2 @@
 # proteomics-downstream-anlaysis
-Data analysis tools for proteomic output data
+Package for proteomics downstream data analysis
