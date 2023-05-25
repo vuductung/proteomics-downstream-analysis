@@ -1,13 +1,13 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from Preprocessing import Preprocessor
-from MultiLevelData import MultiLevelData
-from dimensionality_reduction import DimensionalityReduction
-from Contamination import ContaminationAnalysis
+from preprocessing import Preprocessor
+from multileveldata import MultiLevelData
+from dimensionalityreduction import DimensionalityReduction
+from contamination import ContaminationAnalysis
 from statistics import Statistics
 from visualizer import Visualizer
-from DataqualityInformation import DataQualityInformation
+from dataqualityinformation import DataQualityInformation
 
 class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, Statistics, Visualizer, DataQualityInformation):
     
