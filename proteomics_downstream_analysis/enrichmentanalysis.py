@@ -17,8 +17,14 @@ import textwrap
 
 class EnrichmentAnalysis:
 
-    def __init__(self):
-        pass
+    def __init__(self, obo_file, gaf_file):
+
+        godag = GODag(obo_file)
+        associations = read_gaf(gaf_file)
+        termcounts = TermCounts(godag, associations)
+
+        self.godag = godag
+        self.termcounts = termcounts
 
     def array_enrichment_analysis(self, gene_list, organism):
 
@@ -62,7 +68,7 @@ class EnrichmentAnalysis:
                          for i in term]
         
         for data in enr_data_filt:
-            data['info content'] = [get_info_content(go_id, termcounts)
+            data['info content'] = [get_info_content(go_id, self.termcounts)
                                     for go_id in data['GO term ID']]
             data = data.sort_values('info content', ascending=False)
         self.go_data = enr_data_filt.copy()
@@ -174,9 +180,9 @@ class EnrichmentAnalysis:
                 for val in data['GO term ID']:
                     try:
                         sims = [lin_sim(
-                            val, u_val, godag, termcounts) >= threshold
+                            val, u_val, self.godag, self.termcounts) >= threshold
                             for u_val in unique_values
-                            if lin_sim(val, u_val, godag, termcounts)
+                            if lin_sim(val, u_val, self.godag, self.termcounts)
                             is not None]
 
                         if any(sims):
