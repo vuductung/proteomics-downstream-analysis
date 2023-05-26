@@ -15,16 +15,6 @@ import matplotlib.pyplot as plt
 from adjustText import adjust_text
 import textwrap
 
-# dependencies
-godag = GODag("go-basic.obo")
-
-# read annotationsfile
-associations = read_gaf("goa_human.gaf")
-
-# First get the counts of each GO term.
-termcounts = TermCounts(godag, associations)
-
-
 class EnrichmentAnalysis:
 
     def __init__(self):

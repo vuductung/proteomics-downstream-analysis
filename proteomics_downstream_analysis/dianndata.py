@@ -1,6 +1,4 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 from preprocessing import Preprocessor
 from multileveldata import MultiLevelData
 from dimensionalityreduction import DimensionalityReduction
