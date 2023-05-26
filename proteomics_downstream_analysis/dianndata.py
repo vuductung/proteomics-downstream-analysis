@@ -1,11 +1,11 @@
 import pandas as pd
-from preprocessing import Preprocessor
-from multileveldata import MultiLevelData
-from dimensionalityreduction import DimensionalityReduction
-from contamination import ContaminationAnalysis
-from statistics import Statistics
-from visualizer import Visualizer
-from dataqualityinformation import DataQualityInformation
+from proteomics_downstream_analysis.preprocessor import Preprocessor
+from proteomics_downstream_analysis.multileveldata import MultiLevelData
+from proteomics_downstream_analysis.dimensionalityreduction import DimensionalityReduction
+from proteomics_downstream_analysis.contamination import ContaminationAnalysis
+from proteomics_downstream_analysis.statistics import Statistics
+from proteomics_downstream_analysis.visualizer import Visualizer
+from proteomics_downstream_analysis.dataqualityinformation import DataQualityInformation
 
 class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, Statistics, Visualizer, DataQualityInformation):
     

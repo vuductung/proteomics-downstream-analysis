@@ -13,7 +13,7 @@ class DataQualityInformation:
     def __init__(self):
         pass
 
-    def _missing_vals_lineplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), savefig=False):
+    def _missing_vals_lineplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
     
         # Create a single dataset list and a single title list when no subplots required
         if n_rows == 1 and n_cols == 1:
@@ -39,7 +39,7 @@ class DataQualityInformation:
         if savefig == True:
             fig.savefig('missing_values_lineplot.pdf', bbox_inches='tight', transparent=True)
 
-    def _missing_vals_heatmap(self, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), savefig=False):
+    def _missing_vals_heatmap(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
         
         # Create a single dataset list and a single title list when no subplots
         if n_rows ==1 and n_cols == 1:
@@ -81,7 +81,7 @@ class DataQualityInformation:
             mean_na_data['variable'] = [textwrap.fill(i, wrap) for i in mean_na_data['variable']]
             
             # Use the provided palette if available; otherwise, use Seaborn default color
-            sns.barplot(data=mean_na_data, x='variable', y='value', ax=axes, ci='sd', capsize=.3, errwidth=1.5)
+            sns.barplot(data=mean_na_data, x='variable', y='value', ax=axes, errorbar='sd', capsize=.3, errwidth=1.5)
             axes.set(ylabel='# missing values', xlabel='')
             axes.set_title(title)
             sns.despine()
@@ -93,11 +93,17 @@ class DataQualityInformation:
 
     def _clustermap_pearson_corr(self, figsize=(5, 5), titles=[''], savefig=False):
 
-        for data, title in zip(self.datasets, titles):
-            clutermap_data = data.corr()
+        if self.datasets:
+            datasets = self.datasets.copy()
+
+        else:
+            datasets = [self.data]
+
+        for data, title in zip(datasets, titles):
+            clutermap_data = data.corr(numeric_only=True)
 
             # plot the data
-            sample_data = pd.Series(index=data.corr().index, data=data.corr().index)
+            sample_data = pd.Series(index=data.corr(numeric_only=True).index, data=data.corr(numeric_only=True).index)
             lut = dict(zip(sample_data.unique(), sns.color_palette("Paired", int((data.shape[1]-2)/3))))
             row_colors = sample_data.map(lut)
             col_colors = sample_data.map(lut)
@@ -122,12 +128,11 @@ class DataQualityInformation:
         cv_data = pd.DataFrame()
         
         for i in data.select_dtypes('float').columns.unique():
-            data_trans = data.select_dtypes('float').apply(lambda x: 2**x)
-            cv_data[i] = (data_trans[i].std(axis=1)/data_trans[i].mean(axis=1))*100
+            cv_data[i] = (data[i].std(axis=1)/data[i].mean(axis=1))*100
             
         return cv_data
     
-    def _cv_kdeplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), savefig=False):
+    def _cv_kdeplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
         
         if n_rows == 1 and n_cols == 1:
             datasets = [self.data]
@@ -154,7 +159,7 @@ class DataQualityInformation:
             
             fig.savefig('coef_var_kdeplot.pdf', bbox_inches='tight', transparent=True)
     
-    def _cv_violinplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(4, 10), savefig=False):
+    def _cv_violinplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
         
         if n_rows == 1 and n_cols == 1:
             datasets = [self.data]
@@ -194,7 +199,7 @@ class DataQualityInformation:
         for dataset, axes, title in zip(datasets, np.array(ax).flatten(), titles):
             id_data = dataset.select_dtypes(float).notna().sum(axis=0)
             id_data.index = [textwrap.fill(i, wrap) for i in id_data.index]
-            sns.barplot(x=id_data.index, y=id_data.values, ci='sd', capsize=.3, errwidth=1.5, ax=axes,color='skyblue')
+            sns.barplot(x=id_data.index, y=id_data.values, errorbar='sd', capsize=.3, errwidth=1.5, ax=axes,color='skyblue')
             axes.set(ylabel='# identifications')
             axes.set_title(title)
             sns.despine()
@@ -203,4 +208,17 @@ class DataQualityInformation:
         
         if savefig == True:
             fig.savefig('number_of_ids_barplot.pdf', bbox_inches='tight', transparent=True)
- 
+    
+    def data_quality_info_plot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
+        # show missing values
+        self._missing_vals_lineplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
+        self._missing_vals_heatmap(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
+        self._missing_vals_barplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
+
+        # show reproducibility between replicates
+        self._clustermap_pearson_corr(titles=titles, figsize=figsize, savefig=savefig)
+        self._cv_kdeplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
+        self._cv_violinplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
+
+        # show proteome depth
+        self._number_ids_barplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)

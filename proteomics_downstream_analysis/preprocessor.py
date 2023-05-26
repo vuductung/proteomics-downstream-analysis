@@ -1,4 +1,4 @@
-from preprocessing import Preprocessing
+from proteomics_downstream_analysis.preprocessing import Preprocessing
 
 class Preprocessor:
     
