@@ -48,3 +48,19 @@ class Statistics:
                 comparisons.append((comp1, comp2))
 
         return comparisons
+
+    def get_summary_data(self, summary='mean'):
+
+        '''Create a summary dataframe with mean or median values for each sampletype'''
+
+        string_data = self.data.select_dtypes('string')
+
+        if summary == 'mean':
+            float_data = self.data.select_dtypes('float').T.reset_index(names='sample').groupby('sample').mean().T
+        
+        elif summary == 'median':
+            float_data = self.data.select_dtypes('float').T.reset_index(names='sample').groupby('sample').median().T 
+        
+        summary_data = pd.concat([string_data, float_data], axis=1)
+
+        self.summary_data = summary_data.copy()
