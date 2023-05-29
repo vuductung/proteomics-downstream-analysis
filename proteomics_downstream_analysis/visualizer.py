@@ -138,34 +138,23 @@ class Visualizer:
             if savefig == True:
                 fig.savefig(f'{i.replace("/", "_vs_")}_volcano.pdf', bbox_inches = "tight")
 
-    def sign_prots_plot(self, qvalue=True, n_rows=1, n_cols=1, normalized=False, figsize=(12, 5), savefig=False):
+    def sign_prots_plot(self, normalized=False, figsize=(8, 5), savefig=False):
 
         ''' Plot number of significant proteins '''
 
-        if n_rows == 1 and n_cols == 1:
-            datasets = [self.data]
-
+        sign_data = (self.qv_data.select_dtypes('float') < 0.05).sum(axis=0)
+        norm_sign_data = ((self.qv_data.select_dtypes('float') < 0.05).sum(axis=0)/self.qv_data.shape[0])*100
+        x = [textwrap.fill(i,8)  for i in sign_data.index]
+        plt.figure(figsize=figsize)
+        if normalized is True:
+            sns.barplot(x=x, y=norm_sign_data.values)
+            plt.ylabel('number of significant proteins in %')
+        
         else:
-            datasets = self.datasets.copy()
-
-        fig, ax = plt.subplots(n_rows, n_cols, figsize=figsize)
-
-        for data, axes in zip(datasets, np.array(ax).flatten()):
-
-            sign_data = (data.select_dtypes('float') < 0.05).sum(axis=0)
-            norm_sign_data = ((data.select_dtypes('float') < 0.05).sum(axis=0)/data.shape[0])*100
-
-            if normalized is True:
-                sns.barplot(x=norm_sign_data.index, y=norm_sign_data.values, ax=axes)
-                axes.ylabel(ylabel='number of significant proteins in %')
-            
-            else:
-                sns.barplot(x=sign_data.index, y=sign_data.values, ax=axes)
-                axes.set(ylabel='number of significant proteins')
+            sns.barplot(x=x, y=sign_data.values)
+            plt.ylabel('number of significant proteins')
             
             sns.despine()
-
-        fig.tight_layout()
 
         if savefig is True:
             plt.savefig('sign_prots_plot.pdf', transparent=True, bbox_inches='tight')
