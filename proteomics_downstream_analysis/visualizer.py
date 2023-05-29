@@ -122,46 +122,54 @@ class Visualizer:
             else:
                 pass
             
+            sample_annot = i.split('/')
+            x1 = self.fc_data[i].max()
+            x2 = self.fc_data[i].min()
+            y = self.pv_data[i].max()
+
+            axes.text(x1, y, sample_annot[0], fontsize=12,
+                    bbox=dict(boxstyle='round', fc='w', ec='black', alpha=0.3))
+            axes.text(x2, y, sample_annot[1],
+                    fontsize=12,
+                    bbox=dict(boxstyle='round', fc='w', ec='black', alpha=0.3))
+
             fig.tight_layout()
 
             if savefig == True:
                 fig.savefig(f'{i.replace("/", "_vs_")}_volcano.pdf', bbox_inches = "tight")
 
+    def sign_prots_plot(self, qvalue=True, n_rows=1, n_cols=1, normalized=False, figsize=(12, 5), savefig=False):
 
-    def sign_prots_barplot(self, n_rows=1, n_cols=1, qvalue=True, normalize=False, figsize=(5,5), wrap =5, savefig=False):
-        
+        ''' Plot number of significant proteins '''
+
         if n_rows == 1 and n_cols == 1:
             datasets = [self.data]
-        
+
         else:
             datasets = self.datasets.copy()
-        
-        fig, ax = plt.subplots(1, 2, figsize=figsize)
-        
+
+        fig, ax = plt.subplots(n_rows, n_cols, figsize=figsize)
+
         for data, axes in zip(datasets, np.array(ax).flatten()):
 
-            if qvalue == True:
-                numb_sign_prots = [(data[col] <0.05).sum(axis=0) for col in data.select_dtypes('float').columns]
-                sign_prots_norm = [(data[col]<0.05).sum(axis=0)/len(data[col].dropna())*100 for col in data.select_dtypes('float').columns]
+            sign_data = (data.select_dtypes('float') < 0.05).sum(axis=0)
+            norm_sign_data = ((data.select_dtypes('float') < 0.05).sum(axis=0)/data.shape[0])*100
 
+            if normalized is True:
+                sns.barplot(x=norm_sign_data.index, y=norm_sign_data.values, ax=axes)
+                axes.ylabel(ylabel='number of significant proteins in %')
+            
             else:
-                numb_sign_prots = [(data[col] >1.3).sum(axis=0) for col in data.select_dtypes('float').columns]
-                sign_prots_norm = [(data[col]>1.3).sum(axis=0)/len(data[col].dropna())*100 for col in data.select_dtypes('float').columns]
-                
-                comparisons = data.select_dtypes('float').columns.to_list()
-                comparisons = [textwrap.fill(i, wrap) for i in comparisons]
-                
-                if normalize is True:
-                        
-                    sns.barplot(x=comparisons, y=sign_prots_norm, color='lightgrey', ax=axes)
-                    sns.despine()
-                    axes.set(ylabel= '# of significant proteins')
+                sns.barplot(x=sign_data.index, y=sign_data.values, ax=axes)
+                axes.set(ylabel='number of significant proteins')
+            
+            sns.despine()
 
-                else:
-                    sns.barplot(x=comparisons, y=numb_sign_prots, color='lightblue', ax=axes)
-                    sns.despine()
-                    axes.set(ylabel= 'significant proteins in %')
+        fig.tight_layout()
 
-            fig.tight_layout()
-            if savefig == True:
-                fig.savefig('significant_prot.pdf', bbox_inches='tight', transparent=True)  
+        if savefig is True:
+            plt.savefig('sign_prots_plot.pdf', transparent=True, bbox_inches='tight')
+
+
+            
+        
