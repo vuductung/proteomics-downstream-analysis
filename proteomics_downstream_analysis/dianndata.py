@@ -13,11 +13,18 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
     param data: diann output data
     """
     
-    def __init__(self, filepath):
-                
-        self._Preprocessor = Preprocessor()
-        self.data = pd.read_csv(filepath, delimiter='\t')
+    def __init__(self, filepath=None):
+
+        self.title =[]
         self.datasets = []
+
+        if filepath is None:
+            pass
+            
+        else:
+            self._Preprocessor = Preprocessor()
+            self.data = pd.read_csv(filepath, delimiter='\t')
+            self.datasets = []
 
     def update_col_names(self, col_names):
             
@@ -43,8 +50,12 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
     def change_dtypes(self):
         self.data = self._Preprocessor._change_dtypes(self.data)
 
-    def add_data(self, data):
+    def add_data(self, data, title):
+        
         self.datasets.append(data)
+        self.title.append(title)
+        print('Data with the title {} is added'.format(title))
+        print('Total number of datasets: {}'.format(len(self.datasets)))
 
     def del_data(self, index):
         del self.datasets[index]
