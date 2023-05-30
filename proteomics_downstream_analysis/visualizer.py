@@ -18,7 +18,7 @@ class Visualizer:
         ''' Plot a volcano plot '''
         fig, ax = plt.subplots(n_rows, n_cols, figsize = figsize)
 
-        for i, axes in zip(self.fc_data.select_dtypes('float').columns, ax.flat):
+        for i, axes in zip(self.fc_data.select_dtypes('float').columns, np.array(ax).flatten()):
             
             if qvalue is True:
 
@@ -104,7 +104,6 @@ class Visualizer:
                 if indices.tolist():
                     indices = indices.tolist() + genes_indices.tolist()
                     
-
                 else:
                     indices = genes_indices.tolist()
 
