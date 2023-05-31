@@ -157,7 +157,3 @@ class Visualizer:
 
         if savefig is True:
             plt.savefig('sign_prots_plot.pdf', transparent=True, bbox_inches='tight')
-
-
-            
-        

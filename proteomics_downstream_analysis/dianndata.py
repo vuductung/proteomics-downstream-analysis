@@ -51,11 +51,11 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
         self.data = self._Preprocessor._change_dtypes(self.data)
 
     def add_data(self, data, title):
-        
+
         self.datasets.append(data)
         self.title.append(title)
-        print('Data with the title {} is added'.format(title))
-        print('Total number of datasets: {}'.format(len(self.datasets)))
+        print('Data with the title "{}" is added'.format(title))
+        print('Total number of datasets: "{}"'.format(len(self.datasets)))
 
     def del_data(self, index):
         del self.datasets[index]
