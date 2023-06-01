@@ -2,9 +2,7 @@ import numpy as np
 
 class Preprocessing:
     
-    """
-    This class encapsulates preprocessing steps
-    """
+    """This class encapsulates preprocessing steps"""
     
     def __init__(self):
         pass 
@@ -13,6 +11,15 @@ class Preprocessing:
         
         """
         change datatypes
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            data with original datatypes
+        Returns
+        -------
+        data : pd.DataFrame
+            data with changed datatypes
         """
         
         self.data = data.copy()
@@ -27,6 +34,16 @@ class Preprocessing:
         
         """
         log2 transfrom float data
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            data with float data
+
+        Returns
+        -------
+        data : pd.DataFrame
+            data with log2 transformed float data
         """
 
         for i in self.data.select_dtypes('float').columns.unique():
@@ -37,7 +54,16 @@ class Preprocessing:
         
         """
         Filter for valid values in at least one experimental group
-        param data: diann output table
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            data with float data
+        
+        Returns
+        -------
+        data : pd.DataFrame
+            data with valid values in at least one experimental group
         """
             
         columns_name = self.data.select_dtypes('float').columns.unique()
@@ -56,6 +82,16 @@ class Preprocessing:
         
         """
         Imputing missing values in Genes column with the protein IDs
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            data to be imputed
+
+        Returns
+        -------
+        data : pd.DataFrame
+            data with imputed gene values
         """
         imputation_values = [i.split(';')[0] for i in self.data[self.data['Genes'].isna()]['Protein.Ids'].values]
         
@@ -71,6 +107,16 @@ class Preprocessing:
         The missing values are imputed by random sampling values from a Gaussian distribution with a mean
         of 3 standard deviations below the computed mean and a width of 0.3 times the computed standard deviation.
         The function returns a copy of the imputed dataset with the missing values replaced.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            data to be imputed
+
+        Returns
+        -------
+        data : pd.DataFrame
+            data with imputed values
         """
         # select only float data
         float_data = self.data.select_dtypes('float')
@@ -107,7 +153,21 @@ class Preprocessing:
 
     def _filter_for_valid_vals_perc(self, data, percentage):
     
-        '''Filter for valid values using at least x % data completeness'''
+        """Filter for valid values using at least x % data completeness
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            data to be filtered
+            
+        percentage : float
+            percentage of desired data completeness
+
+        Returns
+        -------
+        data : pd.DataFrame
+            data with valid values using at least x % data completeness
+        """
     
         col_len = len(self.data.select_dtypes('float').columns)
         min_sum = np.ceil(col_len * percentage)
@@ -118,7 +178,22 @@ class Preprocessing:
     def _filter_for_valid_vals_in_one_exp_group_perc(self, data, percentage):
 
 
-        '''Filter for valid values using at least x % data completenes in each experimental group'''
+        """
+        Filter for valid values using at least x % data completenes in each experimental group
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            data to be filtered
+            
+        percentage : float
+            percentage of desired data completeness
+
+        Returns
+        -------
+        data : pd.DataFrame
+            data with valid values using at least x % data completeness in each experimental group
+        """
 
         columns_name = self.data.select_dtypes('float').columns.unique()
         
