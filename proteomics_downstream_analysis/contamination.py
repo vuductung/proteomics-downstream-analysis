@@ -7,18 +7,45 @@ import seaborn as sns
 from scipy import stats
 
 class ContaminationAnalysis:
+
+    """ This class contains methods for detecting and removing contamination in a 2D dataframe. """
+    
     def __init__(self):
         pass
+    
     def zscore_outlier_plot(self, n_row, n_col, height=3, width=8, experimental_group=True, savefig=False):
     
         """
         Detecting outliers in a 2D dataframe using robust zscore and 3.5/-3.5 cutoff (upper and lower outliers)
+
+        Parameters
         ----------
-        Parameters:
-        data (dataframe): Dataframe with float values. Each sample within one experimental Group must have the same column name
-        experimental_group (bool): If True robust zscore will be calculated across experimental group. If false, across entire dataframe
-        ----------
-    
+        n_row : int
+            Number of rows in the subplot
+            
+        n_col : int
+            Number of columns in the subplot
+            
+        height : int
+            Height of the figure
+             (Default value = 3)
+        width : int
+            Width of the figure
+             (Default value = 8)
+        experimental_group : bool
+            If True robust zscore will be calculated across
+            experimental group. If false, across entire dataframe
+             (Default value = True)
+
+        savefig : bool
+            If True, figure will be saved as pdf
+             (Default value = False)
+
+        Returns
+        -------
+        outliers : list
+            List of outliers with sample name and sample measurement order
+        
         """
         # calculate zscore across each experimental group
         if experimental_group == True: 
@@ -124,11 +151,11 @@ class ContaminationAnalysis:
     
         """
         Detecting outliers in a 2D dataframe using robust zscore and 3.5/-3.5 cutoff (upper and lower outliers)
-        ----------
-        Parameters:
-        data (dataframe): Dataframe with float values. Each sample within one experimental Group must have the same column name
-        experimental_group (bool): If True robust zscore will be calculated across experimental group. If false, across entire dataframe
-        ----------
+                
+        Returns
+        -------
+        self.data: pandas dataframe
+            dataframe with outliers removed
 
         """
         # calculate zscore across each experimental group
@@ -185,7 +212,32 @@ class ContaminationAnalysis:
     
     def assess_blood_contam(self, contam_panel, kind='scatter', shift=3, figsize=(12, 3), savefig=False):
 
-        '''Assess blood contamination'''
+        """Assess blood contamination
+
+        Parameters
+        ----------
+        contam_panel : pandas dataframe
+            dataframe containing the list of blood contamination proteins
+            
+        kind : str
+            plot type. Options: 'scatter' or 'histplot' (Default value = 'scatter')
+             (Default value = 'scatter')
+
+        shift : int
+            shift the x-axis by a certain number of units (Default value = 3)
+             (Default value = 3)
+
+        figsize : tuple
+            figure size (Default value = (12, 3)
+             (Default value = (12, 3)
+            
+        savefig :
+             (Default value = False)
+
+        Returns
+        -------
+        plot
+        """
 
         contam_data_list = []
         for i in contam_panel['Type'].unique():

@@ -8,12 +8,42 @@ import matplotlib.pyplot as plt
 
 class DataQualityInformation:
 
-    '''Visualize data quality before data preprocessing'''
+    """Visualize data quality before data preprocessing"""
     
     def __init__(self):
         pass
 
     def _missing_vals_lineplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
+        
+        """
+        Plot the number of missing values per column as a lineplot
+
+        Parameters
+        ----------
+        n_rows : int
+            Number of rows in the subplot
+             (Default value = 1)
+
+        n_cols : int
+            Number of columns in the subplot
+             (Default value = 1)
+        
+        titles : list
+            List of titles for each subplot
+             (Default value = [''])
+
+        figsize : tuple
+            Figure size
+             (Default value = (10, 5) 
+            
+        savefig : bool
+            Save figure
+             (Default value = False)
+
+        Returns
+        -------
+        seaborn.lineplot
+        """
     
         # Create a single dataset list and a single title list when no subplots required
         if n_rows == 1 and n_cols == 1:
@@ -40,6 +70,36 @@ class DataQualityInformation:
             fig.savefig('missing_values_lineplot.pdf', bbox_inches='tight', transparent=True)
 
     def _missing_vals_heatmap(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
+
+        """
+        Plot the number of missing values per column as a heatmap
+
+        Parameters
+        ----------
+        n_rows : int
+            Number of rows in the subplot
+             (Default value = 1)
+
+        n_cols : int
+            Number of columns in the subplot
+             (Default value = 1)
+
+        titles : list
+            List of titles for each subplot
+             (Default value = [''])
+
+        figsize : tuple
+            Figure size
+             (Default value = (10, 5) 
+            
+        savefig : bool
+            Save figure
+             (Default value = False)
+
+        Returns
+        -------
+        seaborn.heatmap
+        """
         
         # Create a single dataset list and a single title list when no subplots
         if n_rows ==1 and n_cols == 1:
@@ -65,6 +125,39 @@ class DataQualityInformation:
             fig.savefig('missing_values_heatmap.pdf', bbox_inches='tight', transparent=True)
 
     def _missing_vals_barplot(self, n_rows=1, n_cols=1, titles=[''], wrap=8, figsize=(10, 5), savefig=False):
+        """
+        Plot the number of missing values per column as a barplot
+
+        Parameters
+        ----------
+        n_rows : int
+            Number of rows in the subplot
+             (Default value = 1)
+
+        n_cols : int
+            Number of columns in the subplot
+             (Default value = 1)
+
+        titles : list
+            List of titles for each subplot
+             (Default value = [''])
+
+        wrap : int
+            Number of characters to wrap the x-axis labels
+             (Default value = 8)
+
+        figsize :  tuple
+            Figure size
+             (Default value = (10, 5) 
+            
+        savefig : bool
+            Save figure
+             (Default value = False)
+
+        Returns
+        -------
+        seaborn.barplot
+        """
     
         # Create a single dataset list and a single title list when no subplots
         if n_rows == 1 and n_cols == 1:
@@ -92,6 +185,27 @@ class DataQualityInformation:
             fig.savefig('mean_missing_values_barplot.pdf', bbox_inches='tight', transparent=True)
 
     def _clustermap_pearson_corr(self, figsize=(5, 5), titles=[''], savefig=False):
+        """
+        Plot the Pearson correlation between the features as a clustermap
+
+        Parameters
+        ----------
+        figsize : tuple
+            Figure size
+             (Default value = (5, 5) 
+
+        titles : list
+            List of titles for each subplot
+             (Default value = [''])
+
+        savefig : bool
+            Save figure
+             (Default value = False)
+
+        Returns
+        -------
+        seaborn.clustermap
+        """
 
         if self.datasets:
             datasets = self.datasets.copy()
@@ -124,6 +238,20 @@ class DataQualityInformation:
                 plt.savefig(f'clustermap_pearson_corr_{title}.pdf', bbox_inches='tight', transparent=True)
 
     def _calculate_coef_var(self, data):
+
+        """
+        Calculate the coefficient of variation (CV) for each feature
+
+        Parameters
+        ----------
+        data : pandas.DataFrame
+            data to calculate the CV        
+
+        Returns
+        -------
+        cv_data : pandas.DataFrame
+            CV data
+        """
     
         cv_data = pd.DataFrame()
         
@@ -133,6 +261,27 @@ class DataQualityInformation:
         return cv_data
     
     def _cv_kdeplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
+        """
+
+        Parameters
+        ----------
+        n_rows :
+             (Default value = 1)
+        n_cols :
+             (Default value = 1)
+        titles :
+             (Default value = [''])
+        figsize :
+             (Default value = (10)
+        5) :
+            
+        savefig :
+             (Default value = False)
+
+        Returns
+        -------
+
+        """
         
         if n_rows == 1 and n_cols == 1:
             datasets = [self.data]
@@ -160,6 +309,36 @@ class DataQualityInformation:
             fig.savefig('coef_var_kdeplot.pdf', bbox_inches='tight', transparent=True)
     
     def _cv_violinplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
+
+        """
+        Plot the coefficient of variation (CV) for each feature as a violinplot
+
+        Parameters
+        ----------
+        n_rows : int
+            Number of rows
+             (Default value = 1)
+
+        n_cols : int
+            Number of columns
+             (Default value = 1)
+
+        titles : list
+            List of titles for each subplot
+             (Default value = [''])
+
+        figsize : tuple
+            Figure size
+             (Default value = (10, 5) 
+            
+        savefig : bool
+            Save figure
+             (Default value = False)
+
+        Returns
+        -------
+        seaborn.violinplot
+        """
         
         if n_rows == 1 and n_cols == 1:
             datasets = [self.data]
@@ -186,6 +365,39 @@ class DataQualityInformation:
             fig.savefig('coef_var_violinplot.pdf', bbox_inches='tight', transparent=True)
     
     def _number_ids_barplot(self, n_rows=1, n_cols=1, titles=[''], wrap=8, figsize=(10, 5), savefig=False):
+
+        """
+        Plot the number of identified proteins for each sample as a barplot
+
+        Parameters
+        ----------
+        n_rows : int
+            Number of rows
+             (Default value = 1)
+
+        n_cols : int
+            Number of columns
+             (Default value = 1)
+
+        titles : list
+            List of titles for each subplot
+             (Default value = [''])
+
+        wrap : int
+            Number of characters to wrap the xticklabels
+             (Default value = 8)
+
+        figsize : tuple
+            Figure size
+             (Default value = (10, 5)
+            
+        savefig : bool
+             (Default value = False)
+
+        Returns
+        -------
+        seaborn.barplot
+        """
         
         if n_rows == 1 and n_cols == 1:
             datasets = [self.data]
@@ -210,6 +422,32 @@ class DataQualityInformation:
             fig.savefig('number_of_ids_barplot.pdf', bbox_inches='tight', transparent=True)
     
     def data_quality_info_plot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
+        """
+        Plot the data quality information
+
+        Parameters
+        ----------
+        n_rows : int
+            Number of rows
+             (Default value = 1)
+        n_cols : int
+            Number of columns
+             (Default value = 1)
+        titles : list
+            List of titles for each subplot
+             (Default value = [''])
+        figsize : tuple
+            Figure size
+             (Default value = (10, 5)
+            
+        savefig : bool
+             Save figure
+             (Default value = False)
+
+        Returns
+        -------
+
+        """
         # show missing values
         self._missing_vals_lineplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
         self._missing_vals_heatmap(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)

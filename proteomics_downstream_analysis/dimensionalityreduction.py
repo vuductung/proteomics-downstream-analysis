@@ -25,12 +25,15 @@ class DimensionalityReduction:
 
         Parameters
         ----------
-        data :
-             (Default value = None)
+        data : pd.DataFrame
+             Data to be decomposed (Default value = None)
 
         Returns
         -------
-
+        pca : sklearn.decomposition.PCA
+            PCA object
+        finalDf : pd.DataFrame
+            Dataframe with principal components and target column
         """
 
         if isinstance(data, pd.DataFrame):
@@ -67,26 +70,29 @@ class DimensionalityReduction:
 
     def pca_plot(self, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), savefig=False):
         
-        """Plot PCA for one or more datasets.
+        """
+        Plot PCA for one or more datasets.
 
         Parameters
         ----------
-        n_rows :
-             (Default value = 1)
-        n_cols :
-             (Default value = 1)
-        titles :
-             (Default value = [''])
-        figsize :
-             (Default value = (5)
-        5) :
+        n_rows : int
+             Number of rows in subplot (Default value = 1)
+
+        n_cols : int
+             Number of columsn in subplot (Default value = 1)
+
+        titles : list
+             List of titles (Default value = [''])
+
+        figsize : tuple
+             Figure size (Default value = (5,5)
             
-        savefig :
-             (Default value = False)
+        savefig : bool
+             If True, save figure (Default value = False)
 
         Returns
         -------
-
+        matplotlib.pyplot.subplots
         """
 
         if n_rows == 1 and n_cols == 1:
@@ -112,24 +118,29 @@ class DimensionalityReduction:
             fig.savefig('pca_plots.pdf', bbox_inches='tight', transparent=True)
     
     def int_pca_plot(self, n_rows=1, n_cols=1, titles=[''], height=500, width=700):
-        """
 
+        """
+        Plot interactive PCA for one or more datasets.
         Parameters
         ----------
-        n_rows :
-             (Default value = 1)
-        n_cols :
-             (Default value = 1)
-        titles :
-             (Default value = [''])
-        height :
+        n_rows : int
+             Number of rows in subplot (Default value = 1)
+
+        n_cols : int
+             Number of columns in subplot (Default value = 1)
+
+        titles : list
+             List of titles for subplot (Default value = [''])
+
+        height : int
              (Default value = 500)
-        width :
+
+        width : int
              (Default value = 700)
 
         Returns
         -------
-
+        plotly.subplots.make_subplots
         """
     
         if n_rows == 1 and n_cols == 1:
@@ -162,16 +173,18 @@ class DimensionalityReduction:
 
     def top_loadings(self, k):
         
-        """Get k features that explain most of variance in PC1 & 2
+        """
+        Get k features that explain most of variance in PC1 & 2
 
         Parameters
         ----------
-        k :
-            
+        k : int
+            Number of most important features to return
 
         Returns
         -------
-
+        top : numpy.ndarray
+            Array of top k features
         """
         
         X = np.array(self.data.select_dtypes('float').T)
@@ -190,18 +203,22 @@ class DimensionalityReduction:
         return top
     
     def min_var_top_loadings(self, k, variance):
+
         """
+        Get k features that explain most of variance
 
         Parameters
         ----------
-        k :
-            
-        variance :
-            
+        k : int
+            Number of most important features to return
+
+        variance : float
+            Minimum variance
 
         Returns
         -------
-
+        top_features : list
+            List of top k features that explain most of variance in PC
         """
 
         float_data = self.data.select_dtypes('float').T
@@ -218,28 +235,33 @@ class DimensionalityReduction:
         return top_features
 
     def biplot(self, k=5, n_rows=1, n_cols=1, titles=[''], figsize=(8,3), savefig=False):
+
         """
+        Plot biplot for one or more datasets.
 
         Parameters
         ----------
-        k :
-             (Default value = 5)
-        n_rows :
-             (Default value = 1)
-        n_cols :
-             (Default value = 1)
-        titles :
-             (Default value = [''])
-        figsize :
-             (Default value = (8)
-        3) :
+        k : int
+             Number of top loadings to plot (Default value = 5)
+        
+        n_rows : int
+             Number of rows in subplot (Default value = 1)
+       
+        n_cols : int
+             Number of columns in subplot (Default value = 1)
+        
+        titles : list
+             List of titles (Default value = [''])
+        
+        figsize : tuple
+             Figure size (Default value = (8, 3)
             
-        savefig :
-             (Default value = False)
+        savefig : bool
+             If True save figure (Default value = False)
 
         Returns
         -------
-
+        matplotlib.pyplot
         """
         
         targets = []
@@ -313,18 +335,20 @@ class DimensionalityReduction:
 
     def _umap(self, data=None, n_neighbors=3):
 
-        """Generate a UMAP plot
+        """
+        Generate UMAP object
 
         Parameters
         ----------
-        data :
+        data : pd.DataFrame
              (Default value = None)
-        n_neighbors :
+
+        n_neighbors : int
              (Default value = 3)
 
         Returns
         -------
-
+        pd.DataFrame
         """
         if isinstance(data, pd.DataFrame):
             df = data.select_dtypes(include =['float64']).T.copy()
@@ -354,28 +378,33 @@ class DimensionalityReduction:
         return finalDf
     
     def umap_plot(self, n_neighbors=3, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), savefig=False):
+
         """
+        Plot UMAP for one or more datasets.
 
         Parameters
         ----------
-        n_neighbors :
+        n_neighbors : int
              (Default value = 3)
-        n_rows :
-             (Default value = 1)
-        n_cols :
-             (Default value = 1)
-        titles :
-             (Default value = [''])
-        figsize :
-             (Default value = (5)
-        5) :
+
+        n_rows : int
+             Number of rows in subplot (Default value = 1)
+
+        n_cols : int
+             Number of columns in subplot (Default value = 1)
+
+        titles : list
+             List of titles in subplot (Default value = [''])
+
+        figsize : tuple
+             Figure size (Default value = (5, 5)
             
         savefig :
              (Default value = False)
 
         Returns
         -------
-
+        matplotlib.pyplot
         """
         
         if n_rows == 1 and n_cols == 1:
@@ -402,22 +431,23 @@ class DimensionalityReduction:
 
     def _tsne(self, data=None, perplexity=10, learning_rate='auto', early_exaggeration=12):
 
-        """t-SNE dimensionality reduction
+        """
+        t-SNE dimensionality reduction
 
         Parameters
         ----------
-        data :
+        data : pd.DataFrame
              (Default value = None)
-        perplexity :
+        perplexity : int
              (Default value = 10)
-        learning_rate :
+        learning_rate : int or str
              (Default value = 'auto')
-        early_exaggeration :
+        early_exaggeration : int
              (Default value = 12)
 
         Returns
         -------
-
+        pd.DataFrame
         """
 
         if isinstance(data, pd.DataFrame):
@@ -440,28 +470,33 @@ class DimensionalityReduction:
 
         Parameters
         ----------
-        perplexity :
+        perplexity : int
              (Default value = 10)
-        learning_rate :
+
+        learning_rate : int or str
              (Default value = 'auto')
-        early_exaggeration :
+
+        early_exaggeration : int
              (Default value = 12)
-        n_rows :
-             (Default value = 1)
-        n_cols :
-             (Default value = 1)
-        titles :
-             (Default value = [''])
-        figsize :
-             (Default value = (5)
-        5) :
+
+        n_rows : int
+             Number of rows in subplot (Default value = 1)
+
+        n_cols : int
+             Number of columns in subplot (Default value = 1)
+
+        titles : list
+             List of titles in subplot (Default value = [''])
+
+        figsize : tuple
+              (Default value = (5, 5) :
             
-        savefig :
-             (Default value = False)
+        savefig : bool
+             If True, save figure (Default value = False)
 
         Returns
         -------
-
+        matplotlib.pyplot
         """
 
         if n_rows == 1 and n_cols == 1:
@@ -484,34 +519,41 @@ class DimensionalityReduction:
 
     def sequential_pca_tsne_plot(self, variance=0.8, perplexity=10, learning_rate='auto', early_exaggeration=12, n_rows=1, n_cols=1, titles=[''], figsize=(5,5), savefig=False):
 
-        """Plot tSNE after PCA dimensionality reduction
+        """
+        Plot tSNE after PCA dimensionality reduction
 
         Parameters
         ----------
-        variance :
-             (Default value = 0.8)
-        perplexity :
+        variance : float
+             Min variance for PCA (Default value = 0.8)
+             
+        perplexity : int
              (Default value = 10)
-        learning_rate :
+
+        learning_rate : int or str
              (Default value = 'auto')
-        early_exaggeration :
+
+        early_exaggeration : int
              (Default value = 12)
-        n_rows :
-             (Default value = 1)
-        n_cols :
-             (Default value = 1)
-        titles :
-             (Default value = [''])
-        figsize :
-             (Default value = (5)
-        5) :
+
+        n_rows : int
+             Number of rows in subplot (Default value = 1)
+
+        n_cols : int
+             Number of columsn in subplot (Default value = 1)
+
+        titles : list
+             List of titels in subplot (Default value = [''])
+
+        figsize : tuple
+             Figure size (Default value = (5, 5) :
             
-        savefig :
-             (Default value = False)
+        savefig : bool
+             If True, savef figure (Default value = False)
 
         Returns
         -------
-
+        matplotlib.pyplot
         """
 
         if n_rows == 1 and n_cols == 1:
