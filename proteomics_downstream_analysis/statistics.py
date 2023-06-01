@@ -4,10 +4,28 @@ from statsmodels.stats.multitest import fdrcorrection
 from scipy import stats
 
 class Statistics:
+    """ """
 
     def student_ttest(self, comparisons, return_output =False):
     
-        '''Unpaired two tailed student's t-test with BH pvalue adjustment and fold change calculation'''
+        """Unpaired two tailed student's t-test with BH pvalue adjustment and fold change calculation
+
+        Parameters
+        ----------
+        comparisons : list
+            List of tuples with comparisons to be made.
+        return_output : boolean
+             If True, fc_data, pv_data and qv_data will be returned. (Default value = False)  
+
+        Returns
+        -------
+        fc_data : pandas.DataFrame
+            Fold change data.
+        pv_data : pandas.DataFrame
+            -log10 pvalue data.
+        qv_data : pandas.DataFrame
+            q-value data. Benjamini-Hochberg adjusted pvalues.
+        """
         
         # create fc_data, pv_data, qv_data
         fc_data = pd.DataFrame()
@@ -40,7 +58,21 @@ class Statistics:
     
     def get_unique_comb(self, a, b):
 
-        '''Get unique combinations between array a and b'''
+        """
+        Get unique combinations between array a and b
+
+        Parameters
+        ----------
+        a : list
+            a list of strings     
+        b : list
+            a list of strings
+
+        Returns
+        -------
+        comparisons : list
+            a list of tuples with unique combinations between a and b.
+        """
 
         comparisons = []
         for comp1 in a:
@@ -51,7 +83,19 @@ class Statistics:
 
     def get_summary_data(self, summary='mean'):
 
-        '''Create a summary dataframe with mean or median values for each sampletype'''
+        """
+        Create a summary dataframe with mean or median values for each sampletype
+
+        Parameters
+        ----------
+        summary : str
+             Calculate the 'mean' or 'median' (Default value = 'mean').
+
+        Returns
+        -------
+        summary_data : pandas.DataFrame
+            A summary dataframe with mean or median values for each sampletype.
+        """
 
         string_data = self.data.select_dtypes('string')
 

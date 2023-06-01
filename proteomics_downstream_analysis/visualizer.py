@@ -8,6 +8,7 @@ import pandas as pd
 
 
 class Visualizer:
+    """ """
 
     def __init__(self):
         pass
@@ -15,40 +16,39 @@ class Visualizer:
     def volcano_plot(self, n_rows, n_cols, gene_list=None, figsize = (8,8), savefig = False, upper_fc_cutoff = 1, lower_fc_cutoff = 1,
                  annot = None, gene_column = 'Genes', qvalue=True):
     
-        """
-        
-        Plot a volcano plot.
+        """Plot a volcano plot.
 
         Parameters
         ----------
         n_rows : int
-             number of rows for the subplot.
+            number of rows for the subplot.
         n_cols : int
-             number of columns for the subplot.
+            number of columns for the subplot.
         gene_list : list
-             name of genes in a list for annotation in volcano plot (Default value = None).
+            name of genes in a list for annotation in volcano plot (Default value = None).
         figsize :
-             figure size. (Default value = (8)
+            figure size. (Default value = (8)
         8) :
+            
         savefig : boolean
-             save the figure. (Default value = False)
+            save the figure. (Default value = False)
         upper_fc_cutoff : int or float
-             Set an upper fold change cutoff for annotation (Default value = 1).
+            Set an upper fold change cutoff for annotation (Default value = 1).
         lower_fc_cutoff : int or float
-             Set a lower fold change cutoff for annotation (Default value = 1).
+            Set a lower fold change cutoff for annotation (Default value = 1).
         annot : str or Nonetype
-            If annot == 'fc_cutoff' genes are annotated by fold change cutoff and gene_list. 
-             If None no annotation by fold change cutoff is applied, only gene_list. (Default value = None)
+            If annot == 'fc_cutoff' genes are annotated by fold change cutoff and gene_list.
+            If None no annotation by fold change cutoff is applied, only gene_list. (Default value = None)
         gene_column : string
-             What column to use the annotation with (Default value = 'Genes').
+            What column to use the annotation with (Default value = 'Genes').
         qvalue : boolean
-             If qvalue == True then 5% adjusted p-value cutoff is used.
-             Else, 5% p-value cutoff is used (Default value = True).
+            If qvalue == True then 5% adjusted p-value cutoff is used.
+            Else, 5% p-value cutoff is used (Default value = True).
 
-        Returns 
+        Returns
         -------
-        matplotlib.pyplot.subplots volcano plot
 
+        
         """
         fig, ax = plt.subplots(n_rows, n_cols, figsize = figsize)
 
@@ -173,23 +173,23 @@ class Visualizer:
 
     def sign_prots_plot(self, normalized=False, figsize=(8, 5), savefig=False):
 
-        """
-        
-        Plot number of significant proteins.
+        """Plot number of significant proteins.
 
         Parameters
         ----------
         normalized : boolean
-             If True displays number of significant proteins in % (Default value = False).
+            If True displays number of significant proteins in % (Default value = False).
         figsize : tuple
-             Figure size (Default value = (8,5).
-            
+            Figure size (Default value = (8,5).
         savefig : boolean
-             If True saves figure (Default value = False).
+            If True saves figure (Default value = False).
+        5) :
+            
 
         Returns
         -------
-        Plot of number of significant proteins.
+
+        
         """
 
         sign_data = (self.qv_data.select_dtypes('float') < 0.05).sum(axis=0)
