@@ -16,6 +16,7 @@ from adjustText import adjust_text
 import textwrap
 
 class EnrichmentAnalysis:
+    """ This class encapsulates enrichment analysis methods """
 
     def __init__(self, obo_file, gaf_file):
 
@@ -28,7 +29,23 @@ class EnrichmentAnalysis:
 
     def array_enrichment_analysis(self, gene_list, organism):
 
-        """ Perform GO term enrichment """
+        """
+        Perform GO term enrichment
+
+        Parameters
+        ----------
+        gene_list : list
+            A list of genes to be used for enrichment analysis
+
+        organism : str
+            Organism to be used to do enrichment analysis. e.g 'human' or 'mouse'
+        
+        Returns
+        -------
+        enr_data_filt : list
+            List of dataframes with GO_Biological_Process_2021, GO_Molecular_Function_2021
+            GO_Cellular_Component_2021 enrichment data.
+        """
         term = ['GO_Biological_Process_2021',
                 'GO_Molecular_Function_2021',
                 'GO_Cellular_Component_2021']
@@ -75,11 +92,38 @@ class EnrichmentAnalysis:
         return enr_data_filt
     
     def plot_array_enrichment(self, go_data, figsize, top,
-                              savefig=False, title=None):
-    
+                              savefig=False):
+        """
+
+        Parameters
+        ----------
+        go_data : list
+            List of dataframes with GO_Biological_Process_2021,
+            GO_Molecular_Function_2021 and
+            GO_Cellular_Component_2021 enrichment data.
+
+        figsize : tuple
+            Size of the figure e.g (10, 10)
+        
+        top : int
+            top n terms to be plotted based on the combined score
+
+        savefig : boolean
+             If True saves the figure (Default value = False).
+
+        Returns
+        -------
+        matplotlib.pyplot
+            Plot of the enrichment analysis
+        """
+
+        titles = ['GO_Biological_Process',
+                  'GO_Molecular_Function',
+                  'GO_Cellular_Component']
+        
         fig, ax = plt.subplots(1, 3, figsize=figsize)
         
-        for data, axes in zip(go_data, ax.flat):
+        for data, axes, title in zip(go_data, ax.flat, titles):
             data_copy = data.copy()
             data_copy['Term'] = [textwrap.fill(i, 30)
                                  for i in data_copy['Term']]
@@ -92,32 +136,81 @@ class EnrichmentAnalysis:
                             sizes=(20, 200),
                             palette='viridis_r',
                             ax=axes)
+            
+            axes.title.set_text(title)
             plt.legend(loc='best')
             sns.despine()
         fig.tight_layout()
-        
-        if title is not None:
-            fig.suptitle(title)
-            fig.subplots_adjust(top=0.9)
             
         if savefig is True:
             fig.savefig('plot_array_enrichment.pdf', bbox_inches='tight',
                         transparent=True)
 
     def array_enrichment_analysis_plot(self, gene_list, organism, figsize, top,
-                                       savefig=False, title=None):
+                                       savefig=False):
 
-        '''Perform enrichment analysis and plot
-        Biological Process, Molecular Function and Cellular compartment'''
+        """
+        Perform enrichment analysis and plot
+        Biological Process, Molecular Function
+        and Cellular compartment
+
+        Parameters
+        ----------
+        gene_list : list
+            A list of genes to be used for enrichment analysis
+            
+        organism : str
+            Organism to be used to do enrichment analysis. e.g 'human' or 'mouse'
+
+        figsize : tuple
+            Figure size e.g (10, 10)
+        
+        top : int
+            Top n terms to be plotted based on the combined score
+
+        savefig : boolean
+             If True save figure (Default value = False)
+
+        Returns
+        -------
+        matplotlib.pyplot
+        """
         # enrichment
         go_data = self.array_enrichment_analysis(gene_list=gene_list,
                                                  organism=organism)
         
         # plot enrichment
         self.plot_array_enrichment(go_data=go_data, figsize=figsize, top=top,
-                                   savefig=savefig, title=title)
+                                   savefig=savefig)
         
     def go_enricher(self, up_gene_list, down_gene_list, organism, go_term=0):
+        """
+        Perform GO term enrichment analysis
+
+        Parameters
+        ----------
+        up_gene_list : list
+            List of upregulated genes
+
+        down_gene_list : list
+            List of downregulated genes
+            
+        organism : str
+            Organism to be used to do enrichment analysis. e.g 'human' or 'mouse'
+
+        go_term : int
+             0 represents Biological process,
+             1 represents Molecular function and
+             2 represents cellular component
+             (Default value = 0)
+
+        Returns
+        -------
+        go_datasets : list
+            List of dataframes with GO_Biological_Process_2021,
+            GO_Molecular_Function_2021 and
+            GO_Cellular_Component_2021 enrichment data.
+        """
     
         go_datasets = []
         
@@ -166,7 +259,22 @@ class EnrichmentAnalysis:
     
     def filter_go_by_lin_sim(self, go_datasets):
     
-        '''Filter data based on lin sematic similarity'''
+        """
+        Filter data based on lin sematic similarity
+
+        Parameters
+        ----------
+        go_datasets : list
+            List of dataframes with upregulated and
+            downregulated enriched GO terms
+            
+        Returns
+        -------
+        go_data : list
+            List of dataframes with upregulated and
+            downregulated enriched GO terms filtered by
+            lin sematic similarity
+        """
         # define a threshold for similarity
         threshold = 0.7
         go_data = []
@@ -201,6 +309,23 @@ class EnrichmentAnalysis:
         return go_data
 
     def calculate_mean_fold_enrichment(self, go_data, fc_data):
+        """
+
+        Parameters
+        ----------
+        go_data : list
+            List of dataframes with upregulated and
+            downregulated enriched GO terms filtered by
+            lin sematic similarity
+            
+        fc_data : pandas.DataFrame
+            Dataframe with fold change data
+
+        Returns
+        -------
+        mean_fold_go_data : pandas.DataFrame
+            Dataframe with mean fold enrichment data
+        """
     
         mean_fold_go_data = go_data.copy()
         
@@ -219,6 +344,27 @@ class EnrichmentAnalysis:
     
     def go_term_scatterplot(self, mean_fold_go_data, n_go_terms,
                             savefig, addit_annot=None):
+        """
+
+        Parameters
+        ----------
+        mean_fold_go_data : pandas.DataFrame
+            Go term data with mean fold enrichment data
+
+        n_go_terms : int
+            Number of go terms to be plotted for up and downregulated genes
+            
+        savefig : bool 
+            If True save figure
+
+        addit_annot : list
+             Additional Go terms to be annotated (Default value = None)
+
+        Returns
+        -------
+        matplotlib.pyplot.figure
+            Scatterplot of mean fold enrichment vs. adjusted p-value
+        """
     
         mean_fold_go_data['Term'] = [i.replace(' ', '\n')
                                      for i in mean_fold_go_data['Term']]
@@ -276,7 +422,38 @@ class EnrichmentAnalysis:
                                  go_term, fc_data, n_go_terms=15,
                                  savefig=False):
         
-        '''Plot enrichment analyis with fold change data'''
+        """
+        Plot enrichment analyis with fold change data
+
+        Parameters
+        ----------
+        up_gene_list : list
+            List of upregulated genes
+
+        down_gene_list : list
+            List of downregulated genes
+
+        organism : str
+            Organism for enrichment analysis
+
+        go_term : int
+             0 represents Biological process,
+             1 represents Molecular function and
+             2 represents cellular component
+             (Default value = 0)
+
+        fc_data : pandas.DataFrame
+            Dataframe with fold change data
+
+        n_go_terms : int
+             Numbers of go terms to be plotted (Default value = 15)
+        savefig : bool
+             If True save figure (Default value = False)
+
+        Returns
+        -------
+        matplotlib.pyplot.figure
+        """
 
         go_datasets = self.go_enricher(up_gene_list=up_gene_list,
                                        down_gene_list=down_gene_list,
@@ -291,6 +468,22 @@ class EnrichmentAnalysis:
                                  n_go_terms=n_go_terms, savefig=savefig)
 
     def go_circle_plot(self, mean_fold_go_data, n_go_terms=10, savefig=False):
+        """
+
+        Parameters
+        ----------
+        mean_fold_go_data : pandas.DataFrame
+            Go term data with mean fold enrichment data
+            
+        n_go_terms : int
+             Number of go terms to plot (Default value = 10)
+        savefig : bool
+             If True save figure (Default value = False)
+
+        Returns
+        -------
+        circos plot
+        """
 
         from pycirclize import Circos
         from pycirclize.parser import Matrix

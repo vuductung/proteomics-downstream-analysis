@@ -17,10 +17,21 @@ import plotly.express as px
 
 
 class DimensionalityReduction:
+    """ """
 
     def _pca(self, data=None):
 
-        '''Generate a PCA'''
+        """Generate a PCA
+
+        Parameters
+        ----------
+        data :
+             (Default value = None)
+
+        Returns
+        -------
+
+        """
 
         if isinstance(data, pd.DataFrame):
             df = data.select_dtypes(include =['float64']).T.copy()
@@ -56,7 +67,27 @@ class DimensionalityReduction:
 
     def pca_plot(self, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), savefig=False):
         
-        """Plot PCA for one or more datasets."""
+        """Plot PCA for one or more datasets.
+
+        Parameters
+        ----------
+        n_rows :
+             (Default value = 1)
+        n_cols :
+             (Default value = 1)
+        titles :
+             (Default value = [''])
+        figsize :
+             (Default value = (5)
+        5) :
+            
+        savefig :
+             (Default value = False)
+
+        Returns
+        -------
+
+        """
 
         if n_rows == 1 and n_cols == 1:
             pca_data = [self._pca()]
@@ -81,6 +112,25 @@ class DimensionalityReduction:
             fig.savefig('pca_plots.pdf', bbox_inches='tight', transparent=True)
     
     def int_pca_plot(self, n_rows=1, n_cols=1, titles=[''], height=500, width=700):
+        """
+
+        Parameters
+        ----------
+        n_rows :
+             (Default value = 1)
+        n_cols :
+             (Default value = 1)
+        titles :
+             (Default value = [''])
+        height :
+             (Default value = 500)
+        width :
+             (Default value = 700)
+
+        Returns
+        -------
+
+        """
     
         if n_rows == 1 and n_cols == 1:
             pca_data = [self._pca()[1]]
@@ -112,7 +162,17 @@ class DimensionalityReduction:
 
     def top_loadings(self, k):
         
-        '''Get k features that explain most of variance in PC1 & 2'''
+        """Get k features that explain most of variance in PC1 & 2
+
+        Parameters
+        ----------
+        k :
+            
+
+        Returns
+        -------
+
+        """
         
         X = np.array(self.data.select_dtypes('float').T)
 
@@ -130,6 +190,19 @@ class DimensionalityReduction:
         return top
     
     def min_var_top_loadings(self, k, variance):
+        """
+
+        Parameters
+        ----------
+        k :
+            
+        variance :
+            
+
+        Returns
+        -------
+
+        """
 
         float_data = self.data.select_dtypes('float').T
         float_data = StandardScaler().fit_transform(float_data)
@@ -145,6 +218,29 @@ class DimensionalityReduction:
         return top_features
 
     def biplot(self, k=5, n_rows=1, n_cols=1, titles=[''], figsize=(8,3), savefig=False):
+        """
+
+        Parameters
+        ----------
+        k :
+             (Default value = 5)
+        n_rows :
+             (Default value = 1)
+        n_cols :
+             (Default value = 1)
+        titles :
+             (Default value = [''])
+        figsize :
+             (Default value = (8)
+        3) :
+            
+        savefig :
+             (Default value = False)
+
+        Returns
+        -------
+
+        """
         
         targets = []
         features = []
@@ -217,7 +313,19 @@ class DimensionalityReduction:
 
     def _umap(self, data=None, n_neighbors=3):
 
-        '''Generate a UMAP plot'''
+        """Generate a UMAP plot
+
+        Parameters
+        ----------
+        data :
+             (Default value = None)
+        n_neighbors :
+             (Default value = 3)
+
+        Returns
+        -------
+
+        """
         if isinstance(data, pd.DataFrame):
             df = data.select_dtypes(include =['float64']).T.copy()
         else:
@@ -246,6 +354,29 @@ class DimensionalityReduction:
         return finalDf
     
     def umap_plot(self, n_neighbors=3, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), savefig=False):
+        """
+
+        Parameters
+        ----------
+        n_neighbors :
+             (Default value = 3)
+        n_rows :
+             (Default value = 1)
+        n_cols :
+             (Default value = 1)
+        titles :
+             (Default value = [''])
+        figsize :
+             (Default value = (5)
+        5) :
+            
+        savefig :
+             (Default value = False)
+
+        Returns
+        -------
+
+        """
         
         if n_rows == 1 and n_cols == 1:
             datasets = [self.data]
@@ -271,7 +402,23 @@ class DimensionalityReduction:
 
     def _tsne(self, data=None, perplexity=10, learning_rate='auto', early_exaggeration=12):
 
-        '''t-SNE dimensionality reduction'''
+        """t-SNE dimensionality reduction
+
+        Parameters
+        ----------
+        data :
+             (Default value = None)
+        perplexity :
+             (Default value = 10)
+        learning_rate :
+             (Default value = 'auto')
+        early_exaggeration :
+             (Default value = 12)
+
+        Returns
+        -------
+
+        """
 
         if isinstance(data, pd.DataFrame):
             float_data = data.select_dtypes('float').T
@@ -289,7 +436,33 @@ class DimensionalityReduction:
 
     def tsne_plot(self, perplexity=10, learning_rate='auto', early_exaggeration=12, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), savefig=False):
 
-        '''Plot t-SNE'''
+        """Plot t-SNE
+
+        Parameters
+        ----------
+        perplexity :
+             (Default value = 10)
+        learning_rate :
+             (Default value = 'auto')
+        early_exaggeration :
+             (Default value = 12)
+        n_rows :
+             (Default value = 1)
+        n_cols :
+             (Default value = 1)
+        titles :
+             (Default value = [''])
+        figsize :
+             (Default value = (5)
+        5) :
+            
+        savefig :
+             (Default value = False)
+
+        Returns
+        -------
+
+        """
 
         if n_rows == 1 and n_cols == 1:
             datasets = [self.data]
@@ -311,7 +484,35 @@ class DimensionalityReduction:
 
     def sequential_pca_tsne_plot(self, variance=0.8, perplexity=10, learning_rate='auto', early_exaggeration=12, n_rows=1, n_cols=1, titles=[''], figsize=(5,5), savefig=False):
 
-        '''Plot tSNE after PCA dimensionality reduction'''
+        """Plot tSNE after PCA dimensionality reduction
+
+        Parameters
+        ----------
+        variance :
+             (Default value = 0.8)
+        perplexity :
+             (Default value = 10)
+        learning_rate :
+             (Default value = 'auto')
+        early_exaggeration :
+             (Default value = 12)
+        n_rows :
+             (Default value = 1)
+        n_cols :
+             (Default value = 1)
+        titles :
+             (Default value = [''])
+        figsize :
+             (Default value = (5)
+        5) :
+            
+        savefig :
+             (Default value = False)
+
+        Returns
+        -------
+
+        """
 
         if n_rows == 1 and n_cols == 1:
             datasets = [self.data]

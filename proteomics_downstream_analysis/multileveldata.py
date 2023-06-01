@@ -1,11 +1,29 @@
 import pandas as pd
 
 class MultiLevelData():
+    """ This class encapsulates data wrangling methods for multi level data """
 
     def __init__(self, filepath):
         pass
     
     def multi_level_data(self, annotation, multilevel_cols):
+        
+        """
+        Get multi level data
+
+        Parameters
+        ----------
+        annotation : pd.DataFrame
+            Annotation data that contains the multilevel columns
+
+        multilevel_cols : list
+            List of column names to be used for multilevel data
+
+        Returns
+        -------
+        multilevel_data : pd.DataFrame
+            Data with multilevel columns
+        """
 
         data_copy = self.data.copy()
         string_cols = data_copy.select_dtypes('string').columns.to_list()
@@ -19,11 +37,26 @@ class MultiLevelData():
         data_copy.columns = multi_cols
         self.multilevel_data = data_copy.copy()
 
-        return data_copy
+        return self.multilevel_data
 
     def single_level_data(self, level, data=None):
 
-        '''get one level data'''
+        """
+        Get a single level column data from multilevel data
+
+        Parameters
+        ----------
+        level : int
+            Level of the column to be extracted
+
+        data : pd.DataFrame
+             (Default value = None)
+
+        Returns
+        -------
+        get_level_data : pd.DataFrame
+            Data with single level columns
+        """
         if isinstance(data, pd.DataFrame):
             get_level_data = data.copy()
             get_level_data.columns = get_level_data.columns.get_level_values(level)
@@ -39,7 +72,25 @@ class MultiLevelData():
 
     def multilevel_summary_stat(self, level, output_level, summary_statistic):
 
-        '''get the mean of a one level data'''
+        """
+        Get the mean of a single level data
+
+        Parameters
+        ----------
+        level : int
+            Level of the column to calculate the statistic from
+
+        output_level : int
+            Level of the column to be used as the output
+            
+        summary_statistic : str
+            Summary statistic to be calculated. Either 'mean' or 'median'
+
+        Returns
+        -------
+        summary_data : pd.DataFrame
+            Data with the summary statistic and single level columns
+        """
 
         data_copy = self.multilevel_data.select_dtypes('float').copy()
 
