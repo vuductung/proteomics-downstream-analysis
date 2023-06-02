@@ -25,3 +25,34 @@ class Imputer:
             col[col_null] = dummy_values
 
         return dummy_data
+
+    def simple_impute(self, strategy, data=None, constant=0):
+        
+        if data is None:
+            imputed_data = self.data.copy()
+
+        else:
+            imputed_data = data.copy()
+
+        for col in imputed_data.columns.unique():
+
+            # Get column, column missing values and range
+            col = imputed_data[col]
+            col_null = col.isnull()
+
+            # Impute data
+            if strategy == 'mean':
+                col[col_null] = col.mean()
+            
+            elif strategy == 'median':
+                col[col_null] = col.median()
+
+            elif strategy == 'constant':
+                col[col_null] = constant
+        
+        self.data = imputed_data
+
+        return self.data
+    
+
+

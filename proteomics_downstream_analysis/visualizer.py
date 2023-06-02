@@ -7,6 +7,9 @@ import numpy as np
 import pandas as pd
 
 
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 class Visualizer:
     """ """
 
@@ -209,3 +212,90 @@ class Visualizer:
         if savefig is True:
             plt.savefig('sign_prots_plot.pdf', transparent=True, bbox_inches='tight')
 
+    def int_volcano_plot(self, n_rows, n_cols, upper_fc_cutoff=None, lower_fc_cutoff=None, annot_genes =[]):
+
+        indices = self.data.fc_data[self.data.fc_data['Genes'].isin(annot_genes)].index.to_list()
+
+
+        for i, col_name in enumerate(self.data.fc_data.columns.unique(), start=1):
+
+            color_list =[]
+
+            for idx in np.arange(self.data.fc_data.shape[0]):
+
+                if self.data.qv_data.loc[idx, col_name] < 0.05 and self.data.fc_data.loc[idx, col_name] >0:
+                    color_list.append('lightcoral')
+
+                elif self.data.qv_data.loc[idx, col_name] <0.05 and self.data.fc_data.loc[idx, col_name] <0:
+                    color_list.append('cornflowerblue')
+
+                else:
+                    color_list.append('lightgrey')
+
+            # Calculate row and col values for the subplots based on i
+            row = (i - 1) // n_cols + 1
+            col = (i - 1) % n_cols + 1
+            
+            text = [gene+', '+description
+                    for gene, description
+                    in zip(self.data.fc_data['Genes'],
+                        self.data.fc_data['First.Protein.Description'])]
+            
+            # Add the scatter plots to the subplots layout
+            fig = make_subplots(rows=n_rows, cols=n_cols)
+
+            fig.add_trace(go.Scatter(x=self.data.fc_data[col_name],
+                                     y=self.data.pv_data[col_name],
+                                     mode='markers',
+                                     marker=dict(color=color_list),
+                                     text=text),
+                                     row=row,
+                                     col=col)
+
+            fig.add_trace(go.Scatter(x=self.data.fc_data.loc[indices, col_name],
+                                     y=self.data.pv_data.loc[indices, col_name],
+                                     mode='markers',
+                                     marker=dict(color='lightblue')),
+                                     row=row,
+                                     col=col)
+
+            # Add annotations to the subplots
+            for idx in indices:
+                fig.add_annotation(
+                    dict(
+                        x=self.data.fc_data.loc[idx, col_name],
+                        y=self.data.pv_data.loc[idx, col_name],
+                        text=self.data.fc_data.loc[idx, 'Genes'],
+                        font={'color': 'black', 'size': 12},
+                        xref=f'x{i}',  # use proper xref
+                        yref=f'y{i}',  # use proper yref
+                    ),
+                    row=row,
+                    col=col
+                )
+            
+            y_max = self.data.pv_data[col_name].max()
+            x_max = self.data.fc_data[col_name].max()
+            x_min = self.data.fc_data[col_name].min()
+
+            for coord, sample in zip([x_max, x_min], col_name.split('/')):
+                fig.add_annotation(
+                    dict(x=coord,
+                        y=y_max,
+                        text=sample,
+                        font={'color': 'black', 'size': 16},
+                        showarrow=False,
+                        ),
+                row=row,
+                col=col    
+                )
+
+            fig.update_xaxes(title_text=f'log2 fold change')
+            fig.update_yaxes(title_text=f'-log10 p-value')
+
+        # Update the layout and traces
+        fig.update_layout(template='simple_white', height=1000, width=1700)
+        fig.update_traces(marker=dict(size=8), selector=dict(mode='markers'))
+
+        # Show the plot
+        fig.show()
