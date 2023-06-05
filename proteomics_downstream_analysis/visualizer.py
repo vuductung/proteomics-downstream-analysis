@@ -212,21 +212,22 @@ class Visualizer:
         if savefig is True:
             plt.savefig('sign_prots_plot.pdf', transparent=True, bbox_inches='tight')
 
-    def int_volcano_plot(self, n_rows, n_cols, upper_fc_cutoff=None, lower_fc_cutoff=None, annot_genes =[]):
+    def int_volcano_plot(self, n_rows, n_cols, height, width, annot_genes =[]):
 
-        indices = self.data.fc_data[self.data.fc_data['Genes'].isin(annot_genes)].index.to_list()
+        indices = self.fc_data[self.fc_data['Genes'].isin(annot_genes)].index.to_list()
 
-
-        for i, col_name in enumerate(self.data.fc_data.columns.unique(), start=1):
+        fig = make_subplots(rows=n_rows, cols=n_cols)
+        
+        for i, col_name in enumerate(self.fc_data.select_dtypes(float).columns.tolist(), start=1):
 
             color_list =[]
 
-            for idx in np.arange(self.data.fc_data.shape[0]):
+            for idx in np.arange(self.fc_data.shape[0]):
 
-                if self.data.qv_data.loc[idx, col_name] < 0.05 and self.data.fc_data.loc[idx, col_name] >0:
+                if self.qv_data.loc[idx, col_name] < 0.05 and self.fc_data.loc[idx, col_name] >0:
                     color_list.append('lightcoral')
 
-                elif self.data.qv_data.loc[idx, col_name] <0.05 and self.data.fc_data.loc[idx, col_name] <0:
+                elif self.qv_data.loc[idx, col_name] <0.05 and self.fc_data.loc[idx, col_name] <0:
                     color_list.append('cornflowerblue')
 
                 else:
@@ -238,22 +239,21 @@ class Visualizer:
             
             text = [gene+', '+description
                     for gene, description
-                    in zip(self.data.fc_data['Genes'],
-                        self.data.fc_data['First.Protein.Description'])]
+                    in zip(self.fc_data['Genes'],
+                        self.fc_data['First.Protein.Description'])]
             
             # Add the scatter plots to the subplots layout
-            fig = make_subplots(rows=n_rows, cols=n_cols)
 
-            fig.add_trace(go.Scatter(x=self.data.fc_data[col_name],
-                                     y=self.data.pv_data[col_name],
+            fig.add_trace(go.Scatter(x=self.fc_data[col_name],
+                                     y=self.pv_data[col_name],
                                      mode='markers',
                                      marker=dict(color=color_list),
                                      text=text),
                                      row=row,
                                      col=col)
 
-            fig.add_trace(go.Scatter(x=self.data.fc_data.loc[indices, col_name],
-                                     y=self.data.pv_data.loc[indices, col_name],
+            fig.add_trace(go.Scatter(x=self.fc_data.loc[indices, col_name],
+                                     y=self.pv_data.loc[indices, col_name],
                                      mode='markers',
                                      marker=dict(color='lightblue')),
                                      row=row,
@@ -263,9 +263,9 @@ class Visualizer:
             for idx in indices:
                 fig.add_annotation(
                     dict(
-                        x=self.data.fc_data.loc[idx, col_name],
-                        y=self.data.pv_data.loc[idx, col_name],
-                        text=self.data.fc_data.loc[idx, 'Genes'],
+                        x=self.fc_data.loc[idx, col_name],
+                        y=self.pv_data.loc[idx, col_name],
+                        text=self.fc_data.loc[idx, 'Genes'],
                         font={'color': 'black', 'size': 12},
                         xref=f'x{i}',  # use proper xref
                         yref=f'y{i}',  # use proper yref
@@ -274,9 +274,9 @@ class Visualizer:
                     col=col
                 )
             
-            y_max = self.data.pv_data[col_name].max()
-            x_max = self.data.fc_data[col_name].max()
-            x_min = self.data.fc_data[col_name].min()
+            y_max = self.pv_data[col_name].max()
+            x_max = self.fc_data[col_name].max()
+            x_min = self.fc_data[col_name].min()
 
             for coord, sample in zip([x_max, x_min], col_name.split('/')):
                 fig.add_annotation(
@@ -294,8 +294,10 @@ class Visualizer:
             fig.update_yaxes(title_text=f'-log10 p-value')
 
         # Update the layout and traces
-        fig.update_layout(template='simple_white', height=1000, width=1700)
+        fig.update_layout(template='simple_white', height=height, width=width)
         fig.update_traces(marker=dict(size=8), selector=dict(mode='markers'))
 
         # Show the plot
         fig.show()
+
+    
