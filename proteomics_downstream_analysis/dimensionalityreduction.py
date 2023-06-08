@@ -15,6 +15,8 @@ from adjustText import adjust_text
 from plotly.subplots import make_subplots
 import plotly.express as px
 
+from .utils import is_jupyter_notebook
+import streamlit as st
 
 class DimensionalityReduction:
     """ """
@@ -119,57 +121,62 @@ class DimensionalityReduction:
     
     def int_pca_plot(self, n_rows=1, n_cols=1, titles=[''], height=500, width=700):
 
-        """
-        Plot interactive PCA for one or more datasets.
-        Parameters
-        ----------
-        n_rows : int
-             Number of rows in subplot (Default value = 1)
+          """
+          Plot interactive PCA for one or more datasets.
+          Parameters
+          ----------
+          n_rows : int
+               Number of rows in subplot (Default value = 1)
 
-        n_cols : int
-             Number of columns in subplot (Default value = 1)
+          n_cols : int
+               Number of columns in subplot (Default value = 1)
 
-        titles : list
-             List of titles for subplot (Default value = [''])
+          titles : list
+               List of titles for subplot (Default value = [''])
 
-        height : int
-             (Default value = 500)
+          height : int
+               (Default value = 500)
 
-        width : int
-             (Default value = 700)
+          width : int
+               (Default value = 700)
 
-        Returns
-        -------
-        plotly.subplots.make_subplots
-        """
-    
-        if n_rows == 1 and n_cols == 1:
-            pca_data = [self._pca()[1]]
+          Returns
+          -------
+          plotly.subplots.make_subplots
+          """
 
-        else:
-            pca_data = [self._pca(i)[1] for i in self.datasets]
+          if n_rows == 1 and n_cols == 1:
+               pca_data = [self._pca()[1]]
 
-        for i in pca_data:
-            i['idx'] = i.index
+          else:
+               pca_data = [self._pca(i)[1] for i in self.datasets]
 
-        plots = [px.scatter(dataset, x="principal component 1", y="principal component 2", 
-                            color="target", hover_data=['idx'], template='simple_white') for dataset in pca_data]
+          for i in pca_data:
+               i['idx'] = i.index
 
-        fig = make_subplots(rows=n_rows, cols=n_cols, subplot_titles=titles)
-        row_col_number = [(i, j) for i in range(1, n_rows+1) for j in range(1, n_cols+1)]
+          plots = [px.scatter(dataset, x="principal component 1", y="principal component 2", 
+                              color="target", hover_data=['idx'], template='simple_white') for dataset in pca_data]
 
-        for plot, row_col in zip(plots, row_col_number):
-            for idx in range(len(plot['data'])):
-                fig.append_trace(plot['data'][idx], row=row_col[0], col=row_col[1])
+          fig = make_subplots(rows=n_rows, cols=n_cols, subplot_titles=titles)
+          row_col_number = [(i, j) for i in range(1, n_rows+1) for j in range(1, n_cols+1)]
 
-        fig.update_layout(height=height, width=width, template='simple_white')
-        fig.update_traces(marker=dict(size=12,
-                                    line=dict(width=2,
-                                                color='DarkSlateGrey')),
-                        selector=dict(mode='markers'))
-        fig.update_xaxes(title_text='PC1')
-        fig.update_yaxes(title_text='PC2')
-        fig.show()
+          for plot, row_col in zip(plots, row_col_number):
+               for idx in range(len(plot['data'])):
+                    fig.append_trace(plot['data'][idx], row=row_col[0], col=row_col[1])
+
+          fig.update_layout(height=height, width=width, template='simple_white')
+          fig.update_traces(marker=dict(size=12,
+                                        line=dict(width=2,
+                                                  color='DarkSlateGrey')),
+                         selector=dict(mode='markers'))
+          fig.update_xaxes(title_text='PC1')
+          fig.update_yaxes(title_text='PC2')
+
+          # Show the plot          
+          if is_jupyter_notebook():
+               fig.show()
+          else:
+               st.plotly_chart(fig, use_container_width=True)
 
     def top_loadings(self, k):
         

@@ -9,9 +9,11 @@ import pandas as pd
 
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import streamlit as st
+from .utils import is_jupyter_notebook
 
 class Visualizer:
-    """ """
+    """ Visualizer class for plotting."""
 
     def __init__(self):
         pass
@@ -212,15 +214,17 @@ class Visualizer:
         if savefig is True:
             plt.savefig('sign_prots_plot.pdf', transparent=True, bbox_inches='tight')
 
-    def int_volcano_plot(self, n_rows, n_cols, height, width, annot_genes =[]):
+    def int_volcano_plot(self, n_rows, n_cols, height, width, annot_genes =[], upper_fc_cutoff = None, lower_fc_cutoff=None, qv_cutoff = False):
 
         indices = self.fc_data[self.fc_data['Genes'].isin(annot_genes)].index.to_list()
 
         fig = make_subplots(rows=n_rows, cols=n_cols)
         
         for i, col_name in enumerate(self.fc_data.select_dtypes(float).columns.tolist(), start=1):
-
+            
+            # Create a list of colors based on the qv and fc values
             color_list =[]
+            fc_indices = []
 
             for idx in np.arange(self.fc_data.shape[0]):
 
@@ -232,7 +236,33 @@ class Visualizer:
 
                 else:
                     color_list.append('lightgrey')
-
+            
+            # Create an annotation list based on fold change cutoff
+            if qv_cutoff is True:
+                if upper_fc_cutoff is not None and lower_fc_cutoff is None:
+                    fc_indices = self.fc_data[(self.qv_data[col_name] < 0.05) &
+                                            (self.fc_data[col_name] > upper_fc_cutoff)].index.to_list()
+                
+                elif lower_fc_cutoff is not None and upper_fc_cutoff is None:
+                    fc_indices = self.fc_data[(self.qv_data[col_name] < 0.05) &
+                                            (self.fc_data[col_name] < lower_fc_cutoff)].index.to_list()
+                
+                elif lower_fc_cutoff is not None and upper_fc_cutoff is not None:
+                    fc_indices = self.fc_data[(self.qv_data[col_name] < 0.05) &
+                                            ((self.fc_data[col_name] > upper_fc_cutoff) |
+                                            (self.fc_data[col_name] < lower_fc_cutoff))].index.to_list()
+                    
+            if qv_cutoff is False:
+                if upper_fc_cutoff is not None and lower_fc_cutoff is None:
+                    fc_indices = self.fc_data[(self.fc_data[col_name] > upper_fc_cutoff)].index.to_list()
+                
+                elif lower_fc_cutoff is not None and upper_fc_cutoff is None:
+                    fc_indices = self.fc_data[(self.fc_data[col_name] < lower_fc_cutoff)].index.to_list()
+                
+                elif lower_fc_cutoff is not None and upper_fc_cutoff is not None:
+                    fc_indices = self.fc_data[((self.fc_data[col_name] > upper_fc_cutoff) |
+                                               (self.fc_data[col_name] < lower_fc_cutoff))].index.to_list()
+                    
             # Calculate row and col values for the subplots based on i
             row = (i - 1) // n_cols + 1
             col = (i - 1) % n_cols + 1
@@ -240,10 +270,9 @@ class Visualizer:
             text = [gene+', '+description
                     for gene, description
                     in zip(self.fc_data['Genes'],
-                        self.fc_data['First.Protein.Description'])]
+                           self.fc_data['First.Protein.Description'])]
             
             # Add the scatter plots to the subplots layout
-
             fig.add_trace(go.Scatter(x=self.fc_data[col_name],
                                      y=self.pv_data[col_name],
                                      mode='markers',
@@ -252,15 +281,15 @@ class Visualizer:
                                      row=row,
                                      col=col)
 
-            fig.add_trace(go.Scatter(x=self.fc_data.loc[indices, col_name],
-                                     y=self.pv_data.loc[indices, col_name],
+            fig.add_trace(go.Scatter(x=self.fc_data.loc[indices + fc_indices, col_name],
+                                     y=self.pv_data.loc[indices + fc_indices, col_name],
                                      mode='markers',
                                      marker=dict(color='lightblue')),
                                      row=row,
                                      col=col)
 
             # Add annotations to the subplots
-            for idx in indices:
+            for idx in (indices + fc_indices):
                 fig.add_annotation(
                     dict(
                         x=self.fc_data.loc[idx, col_name],
@@ -285,6 +314,10 @@ class Visualizer:
                         text=sample,
                         font={'color': 'black', 'size': 16},
                         showarrow=False,
+                        bgcolor='rgba(245, 222, 179, 0.2)', 
+                        bordercolor="black",  
+                        borderwidth=1,  
+                        borderpad=3,  
                         ),
                 row=row,
                 col=col    
@@ -294,10 +327,17 @@ class Visualizer:
             fig.update_yaxes(title_text=f'-log10 p-value')
 
         # Update the layout and traces
-        fig.update_layout(template='simple_white', height=height, width=width)
+        fig.update_layout(template='simple_white',
+                          height=height,
+                          width=width,
+                          hoverlabel=dict(
+            bgcolor="white",
+            font_size=16)
+                        )
         fig.update_traces(marker=dict(size=8), selector=dict(mode='markers'))
 
         # Show the plot
-        fig.show()
-
-    
+        if is_jupyter_notebook():
+            fig.show()
+        else:
+            st.plotly_chart(fig, use_container_width=True)

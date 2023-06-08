@@ -15,6 +15,16 @@ import matplotlib.pyplot as plt
 from adjustText import adjust_text
 import textwrap
 
+from goatools.obo_parser import GODag
+from goatools.associations import read_gaf
+from goatools.associations import dnld_assc
+
+from goatools.semantic import semantic_similarity
+from goatools.semantic import TermCounts, get_info_content
+from goatools.semantic import resnik_sim
+from goatools.semantic import lin_sim
+from goatools.semantic import deepest_common_ancestor
+
 class EnrichmentAnalysis:
     """ This class encapsulates enrichment analysis methods """
 

@@ -5,6 +5,8 @@ import textwrap
 import seaborn as sns
 from matplotlib.patches import Patch
 import matplotlib.pyplot as plt
+import streamlit as st
+from .utils import is_jupyter_notebook
 
 class DataQualityInformation:
 
@@ -69,6 +71,11 @@ class DataQualityInformation:
         if savefig == True:
             fig.savefig('missing_values_lineplot.pdf', bbox_inches='tight', transparent=True)
 
+        # if is_jupyter_notebook():
+        #     fig.show()
+        # else:
+        #     st.pyplot(fig) 
+
     def _missing_vals_heatmap(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
 
         """
@@ -123,6 +130,11 @@ class DataQualityInformation:
 
         if savefig == True:
             fig.savefig('missing_values_heatmap.pdf', bbox_inches='tight', transparent=True)
+
+        # if is_jupyter_notebook():
+        #     fig.show()
+        # else:
+        #     st.pyplot(fig) 
 
     def _missing_vals_barplot(self, n_rows=1, n_cols=1, titles=[''], wrap=8, figsize=(10, 5), savefig=False):
         """
@@ -184,6 +196,11 @@ class DataQualityInformation:
         if savefig == True:
             fig.savefig('mean_missing_values_barplot.pdf', bbox_inches='tight', transparent=True)
 
+        # if is_jupyter_notebook():
+        #     fig.show()
+        # else:
+        #     st.pyplot(fig) 
+
     def _clustermap_pearson_corr(self, figsize=(5, 5), titles=[''], savefig=False):
         """
         Plot the Pearson correlation between the features as a clustermap
@@ -236,6 +253,11 @@ class DataQualityInformation:
             
             if savefig == True:
                 plt.savefig(f'clustermap_pearson_corr_{title}.pdf', bbox_inches='tight', transparent=True)
+            
+            # if is_jupyter_notebook():
+            #     plt.show()
+            # else:
+            #     st.pyplot(g)
 
     def _calculate_coef_var(self, data):
 
@@ -307,6 +329,11 @@ class DataQualityInformation:
         if savefig == True:
             
             fig.savefig('coef_var_kdeplot.pdf', bbox_inches='tight', transparent=True)
+
+        # if is_jupyter_notebook():
+        #     fig.show()
+        # else:
+        #     st.pyplot(fig) 
     
     def _cv_violinplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
 
@@ -363,6 +390,11 @@ class DataQualityInformation:
         
         if savefig == True:
             fig.savefig('coef_var_violinplot.pdf', bbox_inches='tight', transparent=True)
+        
+        # if is_jupyter_notebook():
+        #     fig.show()
+        # else:
+        #     st.pyplot(fig) 
     
     def _number_ids_barplot(self, n_rows=1, n_cols=1, titles=[''], wrap=8, figsize=(10, 5), savefig=False):
 
@@ -420,7 +452,12 @@ class DataQualityInformation:
         
         if savefig == True:
             fig.savefig('number_of_ids_barplot.pdf', bbox_inches='tight', transparent=True)
-    
+
+        # if is_jupyter_notebook():
+        #     fig.show()
+        # else:
+        #     st.pyplot(fig) 
+
     def data_quality_info_plot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
         """
         Plot the data quality information
