@@ -1,29 +1,23 @@
-from collections import Counter
-import textwrap
+import gseapy as gp
 from goatools.obo_parser import GODag
 from goatools.associations import read_gaf
 from goatools.associations import dnld_assc
 from goatools.semantic import semantic_similarity, TermCounts, \
     get_info_content, resnik_sim, lin_sim, deepest_common_ancestor
 
-import gseapy as gp
-
+import streamlit as st
 import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from adjustText import adjust_text
+from collections import Counter
 import textwrap
 
-from goatools.obo_parser import GODag
-from goatools.associations import read_gaf
-from goatools.associations import dnld_assc
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
-from goatools.semantic import semantic_similarity
-from goatools.semantic import TermCounts, get_info_content
-from goatools.semantic import resnik_sim
-from goatools.semantic import lin_sim
-from goatools.semantic import deepest_common_ancestor
+from .utils import is_jupyter_notebook, format_ytick_label
 
 class EnrichmentAnalysis:
     """ This class encapsulates enrichment analysis methods """
@@ -155,6 +149,58 @@ class EnrichmentAnalysis:
         if savefig is True:
             fig.savefig('plot_array_enrichment.pdf', bbox_inches='tight',
                         transparent=True)
+            
+    def int_plot_array_enrichment(self, go_data, height=700, width=1500, top=100):
+
+        n_cols = 3
+        titles = ['Biological Process', 'Cellular Component', 'Molecular Function']
+        fig = make_subplots(1, 3, horizontal_spacing = 0.2, subplot_titles=titles)
+
+        cmin = np.min(pd.concat(go_data)['Combined Score'])
+        cmax = np.max(pd.concat(go_data)['Combined Score'])
+
+        for i, data in enumerate(go_data, start=1):
+            
+            data = data.iloc[:top].copy()
+
+            # Calculate row and col values for the subplots based on i
+            row = (i - 1) // n_cols + 1
+            col = (i - 1) % n_cols + 1
+
+            # Add the scatter plots to the subplots layout
+            fig.add_trace(go.Scatter(x=data['Adjusted P-value'],
+                                    y=data['Term'],
+                                    mode='markers',
+                                    marker=dict(size=data['Overlap in %'],
+                                                color=data['Combined Score'],
+                                                colorscale='Viridis', 
+                                                showscale=True,  
+                                                cmin=cmin,  
+                                                cmax=cmax),
+                                    text=data['Genes'],
+                                    hovertemplate = "Overlap in %: %{marker.size}<br>" +
+                                                    "Genes: %{text}<br>"),
+                                        row=row,
+                                        col=col)
+
+            fig.update_xaxes(title_text=f'Term')
+            fig.update_yaxes(title_text=f'Adjusted P-value', 
+                            tickmode='array',
+                            tickvals=data['Term'],
+                            ticktext=[format_ytick_label(tick) for tick in data['Term']],
+                            row=row, col=col)
+
+        # Update the layout and traces
+        fig.update_layout(template='simple_white',
+                        height=height,
+                        width=width,
+                        hoverlabel=dict(bgcolor="white",
+                                        font_size=16))
+        # Show the plot
+        if is_jupyter_notebook():
+            fig.show()
+        else:
+            st.plotly_chart(fig, use_container_width=True)
 
     def array_enrichment_analysis_plot(self, gene_list, organism, figsize, top,
                                        savefig=False):
@@ -189,10 +235,21 @@ class EnrichmentAnalysis:
         go_data = self.array_enrichment_analysis(gene_list=gene_list,
                                                  organism=organism)
         
-        # plot enrichment
-        self.plot_array_enrichment(go_data=go_data, figsize=figsize, top=top,
+        self.plot_array_enrichment(go_data=go_data, 
+                                   figsize=figsize, top=top,
                                    savefig=savefig)
+        return go_data
+    
+    def array_enrichment_analysis_int_plot(self, gene_list, organism, height=700, width=1500, top=10):
+
+         # enrichment
+        go_data = self.array_enrichment_analysis(gene_list=gene_list,
+                                                 organism=organism)
         
+        self.int_plot_array_enrichment(go_data=go_data, height=height, width=width, top=top)
+        
+        return go_data
+    
     def go_enricher(self, up_gene_list, down_gene_list, organism, go_term=0):
         """
         Perform GO term enrichment analysis
@@ -540,3 +597,4 @@ class EnrichmentAnalysis:
                 plt.title('Downregulated proteins')
             if savefig == True:
                 plt.savefig(f'{idx}_circle_plot.pdf', bbox_inches='tight')
+    
