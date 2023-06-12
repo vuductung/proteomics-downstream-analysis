@@ -183,8 +183,8 @@ class EnrichmentAnalysis:
                                         row=row,
                                         col=col)
 
-            fig.update_xaxes(title_text=f'Term')
-            fig.update_yaxes(title_text=f'Adjusted P-value', 
+            fig.update_xaxes(title_text='Adjusted P-value')
+            fig.update_yaxes(title_text='Term', 
                             tickmode='array',
                             tickvals=data['Term'],
                             ticktext=[format_ytick_label(tick) for tick in data['Term']],
