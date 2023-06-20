@@ -22,16 +22,19 @@ from .utils import is_jupyter_notebook, format_ytick_label
 class EnrichmentAnalysis:
     """ This class encapsulates enrichment analysis methods """
 
-    def __init__(self, obo_file, gaf_file):
+    def __init__(self, obo_file=None, gaf_file=None):
+        
+        if obo_file is None and gaf_file is None:
+            pass
+        else:
+            godag = GODag(obo_file)
+            associations = read_gaf(gaf_file)
+            termcounts = TermCounts(godag, associations)
 
-        godag = GODag(obo_file)
-        associations = read_gaf(gaf_file)
-        termcounts = TermCounts(godag, associations)
+            self.godag = godag
+            self.termcounts = termcounts
 
-        self.godag = godag
-        self.termcounts = termcounts
-
-    def array_enrichment_analysis(self, gene_list, organism):
+    def array_enrichment_analysis(self, gene_list, organism, sematic_sim_filter=True):
 
         """
         Perform GO term enrichment
@@ -83,18 +86,24 @@ class EnrichmentAnalysis:
         enr_data = enr_data[enr_data['Adjusted P-value'] > 1.3]
         enr_data = enr_data.sort_values('Combined Score', ascending=False) 
         
-        enr_data_filt = self.filter_go_by_lin_sim(
-            [enr_data[enr_data['Gene_set'] == i] for i in term])
-        enr_data_filt = [enr_data_filt[enr_data_filt['Gene_set'] == i]
-                         for i in term]
+        if sematic_sim_filter is True:
+            enr_data_filt = self.filter_go_by_lin_sim(
+                [enr_data[enr_data['Gene_set'] == i] for i in term])
+            enr_data_filt = [enr_data_filt[enr_data_filt['Gene_set'] == i]
+                            for i in term]
+            
+            for data in enr_data_filt:
+                data['info content'] = [get_info_content(go_id, self.termcounts)
+                                        for go_id in data['GO term ID']]
+                data = data.sort_values('info content', ascending=False)
+            
+        else:
+            enr_data_filt = [enr_data[enr_data['Gene_set'] == i] for i in term]
         
-        for data in enr_data_filt:
-            data['info content'] = [get_info_content(go_id, self.termcounts)
-                                    for go_id in data['GO term ID']]
-            data = data.sort_values('info content', ascending=False)
         self.go_data = enr_data_filt.copy()
         return enr_data_filt
     
+
     def plot_array_enrichment(self, go_data, figsize, top,
                               savefig=False):
         """

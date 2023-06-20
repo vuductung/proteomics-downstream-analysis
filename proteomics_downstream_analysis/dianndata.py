@@ -17,7 +17,8 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
         self.datasets = []
 
         if filepath is None:
-            pass
+            self._Preprocessor = Preprocessor()
+            self.datasets = []
             
         else:
             self._Preprocessor = Preprocessor()
@@ -64,6 +65,7 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
         return self.data
     
     def preprocessing(self):
+        
         """
         Prepocess data
         """
@@ -103,6 +105,7 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
         print('Total number of datasets: "{}"'.format(len(self.datasets)))
 
     def del_data(self, index):
+
         """
         Delete data from the datasets list
 

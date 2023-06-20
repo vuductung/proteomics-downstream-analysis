@@ -22,13 +22,12 @@ class Preprocessing:
             data with changed datatypes
         """
         
-        self.data = data.copy()
-        for i in self.data.columns.unique():
+        for i in data.columns.unique():
             if i in ['Protein.Group', 'Protein.Ids', 'Protein.Names', 'Genes','First.Protein.Description']:
-                self.data[i] = self.data[i].astype('string')
+                data[i] = data[i].astype('string')
             else:
-                self.data[i] = self.data[i].astype('float') 
-        return self.data
+                data[i] = data[i].astype('float') 
+        return data
     
     def _log2_transform(self, data):
         
@@ -46,9 +45,9 @@ class Preprocessing:
             data with log2 transformed float data
         """
 
-        for i in self.data.select_dtypes('float').columns.unique():
-            self.data[i] = np.log2(self.data[i])
-        return self.data
+        for i in data.select_dtypes('float').columns.unique():
+            data[i] = np.log2(data[i])
+        return data
         
     def _filter_for_valid_vals_in_one_exp_group(self, data):
         
@@ -66,17 +65,17 @@ class Preprocessing:
             data with valid values in at least one experimental group
         """
             
-        columns_name = self.data.select_dtypes('float').columns.unique()
+        columns_name = data.select_dtypes('float').columns.unique()
             
         indices = []
             
         for col in columns_name:
-            non_na_indices = self.data[self.data[col].isna().sum(axis=1)==0].index.to_list()
+            non_na_indices = data[data[col].isna().sum(axis=1)==0].index.to_list()
             indices += non_na_indices
         indices = list(set(indices))
-        self.data = self.data[self.data.index.isin(indices)].reset_index(drop = True)
+        data = data[data.index.isin(indices)].reset_index(drop = True)
         
-        return self.data
+        return data
     
     def _impute_genes_with_protein_ids(self, data):
         
@@ -93,12 +92,12 @@ class Preprocessing:
         data : pd.DataFrame
             data with imputed gene values
         """
-        imputation_values = [i.split(';')[0] for i in self.data[self.data['Genes'].isna()]['Protein.Ids'].values]
+        imputation_values = [i.split(';')[0] for i in data[data['Genes'].isna()]['Protein.Ids'].values]
         
-        for idx, value in zip(self.data[self.data['Genes'].isna()]['Protein.Ids'].index, imputation_values):
-            self.data.loc[idx, ['Genes']] = value
+        for idx, value in zip(data[data['Genes'].isna()]['Protein.Ids'].index, imputation_values):
+            data.loc[idx, ['Genes']] = value
 
-        return self.data
+        return data
     
     def _impute_based_on_gaussian(self, data):
          
@@ -119,7 +118,7 @@ class Preprocessing:
             data with imputed values
         """
         # select only float data
-        float_data = self.data.select_dtypes('float')
+        float_data = data.select_dtypes('float')
         na_data = float_data[float_data.isna().any(axis=1)]
 
         # loop through na_data rows and generate imputed data
@@ -146,10 +145,10 @@ class Preprocessing:
         stacked_na_data.loc[na_index] = imp_values_list
         imp_data = stacked_na_data.unstack()
         imp_data.columns = columns
-        imp_data = self.data.select_dtypes('string').merge(imp_data, left_index=True, right_index=True)
-        self.data = imp_data.copy()
+        imp_data = data.select_dtypes('string').merge(imp_data, left_index=True, right_index=True)
+        data = imp_data.copy()
         
-        return self.data
+        return data
 
     def _filter_for_valid_vals_perc(self, data, percentage):
     
@@ -169,11 +168,11 @@ class Preprocessing:
             data with valid values using at least x % data completeness
         """
     
-        col_len = len(self.data.select_dtypes('float').columns)
+        col_len = len(data.select_dtypes('float').columns)
         min_sum = np.ceil(col_len * percentage)
-        bool_array = self.data.select_dtypes('float').notna().sum(axis=1) >= min_sum
+        bool_array = data.select_dtypes('float').notna().sum(axis=1) >= min_sum
 
-        return self.data[bool_array]
+        return data[bool_array]
 
     def _filter_for_valid_vals_in_one_exp_group_perc(self, data, percentage):
 
@@ -195,14 +194,17 @@ class Preprocessing:
             data with valid values using at least x % data completeness in each experimental group
         """
 
-        columns_name = self.data.select_dtypes('float').columns.unique()
+        columns_name = data.select_dtypes('float').columns.unique()
         
         indices = []
         
         for col in columns_name:
-            non_na_indices = self.data[self.data[col].isna().sum(axis=1)/len(self.data[col].columns) >= percentage].index
-            indices.append(non_na_indices)
+            numerator = data[col].notna().sum(axis=1)
+            denominator = data[col].shape[1]
+            non_na_indices = data[numerator/denominator >= percentage].index.tolist()
+            indices += non_na_indices
+
         indices = list(set(indices))
-        self.data = self.data[self.data.index.isin(indices)].reset_index(drop = True)
+        data = data[data.index.isin(indices)].reset_index(drop = True)
         
-        return self.data
+        return data
