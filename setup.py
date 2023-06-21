@@ -10,7 +10,7 @@ setup(
     version="0.1.0",
     url="https://github.com/vuductung/proteomics-downstream-anlaysis",
     packages=find_packages(include=["proteomics_downstream_analysis", "proteomics_downstream_analysis.*"]),
-    python_requires="3.11.3",
+    python_requires=">=3.6.1",
     install_requires=[
                     "adjustText",
                     "goatools",
