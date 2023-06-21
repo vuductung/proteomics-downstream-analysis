@@ -6,11 +6,11 @@ setup(
     author="Vu Duc Tung",
     author_email="tungvuduc@outlook.de",
     description="A package for downstream data analysis of proteomics data",
-    keywords=["Mass spectrometry", "proteomics", "downstream analysis", "data analysis", "data visualization"],
+    keywords = ["proteomics", "downstream analysis", "data analysis", "data visualization", "mass spectrometry"],
     version="0.1.0",
     url="https://github.com/vuductung/proteomics-downstream-anlaysis",
     packages=find_packages(include=["proteomics_downstream_analysis", "proteomics_downstream_analysis.*"]),
-    python_requires=">=3.6",
+    python_requires="3.11.3",
     install_requires=[
                     "adjustText",
                     "goatools",
@@ -31,5 +31,5 @@ setup(
                     "umap",
                     "UpSetPlot",
                     "venn"
-                    ],
+                    ]
 )
