@@ -72,7 +72,7 @@ Proteomics Downstream Analysis v0.1.0 provides a solid foundation for your prote
 
 ProteomicsDownstreamAnalysis can be installed using:
 ```
-pip install proteomics_downstream_analysis
+pip install proteomics-downstream-analysis
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
