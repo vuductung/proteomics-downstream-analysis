@@ -27,7 +27,7 @@
   <summary>Table of Contents</summary>
   <ol>
     <li>
-      <a href="#about-the-project">About The Project</a>
+      <a href="#package-description">Package description</a>
       <ul>
       </ul>
     </li>
@@ -44,7 +44,7 @@
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- ABOUT THE PROJECT -->
-## About The Project
+## Package description
 Introducing Proteomics Downstream Analysis v0.1.0, a comprehensive Python package designed to simplify and streamline the process of downstream data analysis for proteomics research. This package offers a user-friendly and efficient way to handle, manipulate, process, and visualize large proteomics datasets, helping researchers gain valuable insights from their data more quickly and effectively.
 
 Key features of proteomics_downstream_analysis v0.1.0 include:
