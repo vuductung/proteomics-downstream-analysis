@@ -88,13 +88,7 @@ Example nbs will follow.
 
 Contribution is much appreciated. Happy to get feedback and suggestions! 
 
-Should you have a suggestion that could enhance this project, kindly fork the repository and create a pull request. You may also open an issue labeled as “improvement”. Remember to star the project to show your support! Thank you for being a part of this journey!
-
-1. Fork the Project
-2. Create your own Branch (`git checkout -b contribution/suggestions`)
-3. Commit your Changes (`git commit -m 'Add some suggestions'`)
-4. Push the Branch (`git push origin contribution/suggestions`)
-5. Pull Request
+Should you have a suggestion that could enhance this project, kindly fork the repository and create a pull request. You may also open an issue labeled as “improvement”. 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
