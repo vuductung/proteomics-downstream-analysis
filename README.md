@@ -49,7 +49,7 @@ Introducing Proteomics Downstream Analysis v0.1.0, a comprehensive Python packag
 
 Key features of proteomics_downstream_analysis v0.1.0 include:
 
-Data import and preprocessing: Easily import and preprocess raw proteomics data from various sources such as DIA-NN. Automatically handle missing values, normalization, and data transformation as needed.
+Data import and preprocessing: Easily import and preprocess raw proteomics data from DIA-NN. Automatically handle missing values, normalization, and data transformation as needed.
 
 Statistical analysis: Perform essential statistical tests such as t-tests, ANOVA, and multiple testing correction methods to assess the significance of differentially expressed proteins.
 
@@ -80,8 +80,9 @@ pip install proteomics-downstream-analysis
 
 <!-- USAGE EXAMPLES -->
 ## Usage
-Example nbs will follow. 
-
+```
+import proteomics_downstream_analysis as pda
+```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Contributing
