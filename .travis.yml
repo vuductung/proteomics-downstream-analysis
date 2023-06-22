@@ -3,7 +3,7 @@ python:
   - "3.9"
 install:
   - pip install -e .
-  - pip install pytest-cov codecov
+  - pip install pytest-cov codecov ipykernel
 script:
   - pytest --cov=src tests
 after_success:
