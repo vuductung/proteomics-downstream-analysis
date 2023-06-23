@@ -169,8 +169,10 @@ class DimensionalityReduction:
                                         line=dict(width=2,
                                                   color='DarkSlateGrey')),
                          selector=dict(mode='markers'))
-          fig.update_xaxes(title_text='PC1')
-          fig.update_yaxes(title_text='PC2')
+          pc1_eigenvalue = "%.2f" % pca_data.explained_variance_ratio_[0] * 100
+          pc2_eigenvalue = "%.2f" % pca_data.explained_variance_ratio_[1] * 100
+          fig.update_xaxes(title_text=f'PC1 {pc1_eigenvalue}')
+          fig.update_yaxes(title_text=f'PC2 {pc2_eigenvalue}')
 
           # Show the plot          
           if is_jupyter_notebook():
