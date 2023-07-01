@@ -6,6 +6,22 @@ from scipy import stats
 class Statistics:
     """ """
 
+    def anova(self):
+        
+        f_stat_data = pd.DataFrame()
+        anova_pv_data = pd.DataFrame()
+
+        columns = self.data.select_dtypes('string').columns
+
+        samples = [self.data[col] for col in columns]
+
+        f_stat, pvalues = stats.f_oneway(*samples, axis=1)
+        f_stat_data['f_stat'] = f_stat
+        anova_pv_data['pvalue'] = pvalues
+
+        self.f_stat_data = f_stat_data
+        self.anova_pv_data = anova_pv_data
+
     def student_ttest(self, comparisons, return_output =False):
     
         """Unpaired two tailed student's t-test with BH pvalue adjustment and fold change calculation
