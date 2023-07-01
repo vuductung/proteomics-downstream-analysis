@@ -10,7 +10,7 @@ setup(
     author_email="tungvuduc@outlook.de",
     description="A package for downstream data analysis of proteomics data",
     long_description=long_description,
-    long_description_content_type="text/x-rst",
+    long_description_content_type="text/markdown",
     keywords = ["proteomics", "downstream analysis", "data analysis", "data visualization", "mass spectrometry"],
     version="0.1.1",
     url="https://github.com/vuductung/proteomics-downstream-anlaysis",
