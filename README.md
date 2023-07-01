@@ -1,28 +1,3 @@
-<!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
-<a name="readme-top"></a>
-<!--
-*** Thanks for checking out the Best-README-Template. If you have a suggestion
-*** that would make this better, please fork the repo and create a pull request
-*** or simply open an issue with the tag "enhancement".
-*** Don't forget to give the project a star!
-*** Thanks again! Now go create something AMAZING! :D
--->
-
-
-
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
-
-<!-- PROJECT LOGO -->
-
-
-<!-- TABLE OF CONTENTS -->
 <details>
   <summary>Table of Contents</summary>
   <ol>
@@ -43,7 +18,6 @@
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- ABOUT THE PROJECT -->
 ## Package description
 Introducing Proteomics Downstream Analysis v0.1.0, a comprehensive Python package designed to simplify and streamline the process of downstream data analysis for proteomics research. This package offers a user-friendly and efficient way to handle, manipulate, process, and visualize large proteomics datasets, helping researchers gain valuable insights from their data more quickly and effectively.
 
@@ -67,7 +41,6 @@ Proteomics Downstream Analysis v0.1.0 provides a solid foundation for your prote
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-<!-- GETTING STARTED -->
 ## Getting Started
 
 ProteomicsDownstreamAnalysis can be installed using:
@@ -78,7 +51,6 @@ pip install proteomics-downstream-analysis
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-<!-- USAGE EXAMPLES -->
 ## Usage
 ```
 import proteomics_downstream_analysis as pda
@@ -94,7 +66,6 @@ Should you have a suggestion that could enhance this project, kindly fork the re
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-<!-- LICENSE -->
 ## License
 
 Distributed under the MIT License. See `MIT.txt` for more information.
