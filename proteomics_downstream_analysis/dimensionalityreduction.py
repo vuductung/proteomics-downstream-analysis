@@ -147,17 +147,36 @@ class DimensionalityReduction:
 
           if n_rows == 1 and n_cols == 1:
                pca_data = [self._pca()[1]]
+               pca = [self._pca()[0]]
 
           else:
                pca_data = [self._pca(i)[1] for i in self.datasets]
+               pca = [self._pca(i)[0] for i in self.datasets]
 
           for i in pca_data:
                i['idx'] = i.index
 
-          plots = [px.scatter(dataset, x="principal component 1", y="principal component 2", 
-                              color="target", hover_data=['idx'], template='simple_white') for dataset in pca_data]
+          # plots = [px.scatter(dataset, x="principal component 1", y="principal component 2", 
+          #                     color="target", hover_data=['idx'], template='simple_white') for dataset in pca_data]
+
+          plots = []
 
           fig = make_subplots(rows=n_rows, cols=n_cols, subplot_titles=titles)
+          
+          for dataset, pca_comp in zip(pca_data, pca):
+               plot = px.scatter(dataset, x="principal component 1", y="principal component 2", 
+                              color="target", hover_data=['idx'], template='simple_white')
+               
+               # Calculate explained variance for PC1 and PC2
+               pc1_eigenvalue = "%.2f" % (pca_comp.explained_variance_ratio_[0] * 100)
+               pc2_eigenvalue = "%.2f" % (pca_comp.explained_variance_ratio_[1] * 100)
+               
+               # Update plot axes titles
+               fig.update_xaxes(title_text=f'PC1 {pc1_eigenvalue} %')
+               fig.update_yaxes(title_text=f'PC2 {pc2_eigenvalue} %')
+
+               plots.append(plot)
+
           row_col_number = [(i, j) for i in range(1, n_rows+1) for j in range(1, n_cols+1)]
 
           for plot, row_col in zip(plots, row_col_number):
@@ -169,10 +188,6 @@ class DimensionalityReduction:
                                         line=dict(width=2,
                                                   color='DarkSlateGrey')),
                          selector=dict(mode='markers'))
-          pc1_eigenvalue = "%.2f" % pca_data.explained_variance_ratio_[0] * 100
-          pc2_eigenvalue = "%.2f" % pca_data.explained_variance_ratio_[1] * 100
-          fig.update_xaxes(title_text=f'PC1 {pc1_eigenvalue}')
-          fig.update_yaxes(title_text=f'PC2 {pc2_eigenvalue}')
 
           # Show the plot          
           if is_jupyter_notebook():
