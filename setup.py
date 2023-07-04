@@ -12,7 +12,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     keywords = ["proteomics", "downstream analysis", "data analysis", "data visualization", "mass spectrometry"],
-    version="0.1.1",
+    version="0.1.2",
     url="https://github.com/vuductung/proteomics-downstream-anlaysis",
     packages=find_packages(include=["repos","proteomics_downstream_analysis", "proteomics_downstream_analysis.*"]),
     python_requires=">=3.6.1",
