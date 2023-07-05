@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from proteomics_downstream_analysis.preprocessor import Preprocessor
 from proteomics_downstream_analysis.multileveldata import MultiLevelData
 from proteomics_downstream_analysis.dimensionalityreduction import DimensionalityReduction
@@ -120,3 +121,28 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
             List of datasets without the deleted data
         """
         del self.datasets[index]
+
+    def from_spectronaut_to_diann(self, filepath):
+        
+        data = pd.read_csv(filepath)
+        data = data.filter(regex='Groups|UniProtIds|ProteinNames|Genes|ProteinDescriptions|raw.PG.Quantity')
+
+        # rename columns
+        col_rename = {'PG.ProteinGroups':'Protein.Group',
+                    'PG.Genes':'Genes',
+                    'PG.ProteinDescriptions': 'First.Protein.Description',
+                    'PG.UniProtIds': 'Protein.Ids',
+                    'PG.ProteinNames': 'Protein.Names'}
+        data = data.rename(columns = col_rename)
+
+        # reorder columns
+        reorder = ['Protein.Group',
+                'Protein.Ids',
+                'Protein.Names',
+                'Genes',
+                'First.Protein.Description'] + data.columns[5:].tolist()
+        data = data[reorder]
+
+        # introduce np.nan
+        data = data.replace('Filtered', np.nan)
+        self.data = data
