@@ -70,6 +70,64 @@ class DimensionalityReduction:
         
         return pca, finalDf
 
+    def calculate_loading(self):
+
+          # calculate loading
+          components_transp = self._pca()[0].components_.T
+          sqrt_eigenvalues = np.sqrt(self._pca()[0].explained_variance_)
+
+          loading_data = pd.DataFrame(components_transp * sqrt_eigenvalues)
+          loading_data['Genes'] = self.data['Genes']
+          
+          # renname cols
+          rename = {0: 'principal component 1',
+                    1: 'principal component 2',}
+          loading_data = loading_data.rename(columns=rename)
+          
+          self.loading_data = loading_data
+
+
+    def principal_component_sample_distplot(self, pc=1, bins=20):
+
+          _, pca_data = self._pca()
+          if pc ==1:
+               sns.histplot(data=pca_data, x='principal component 1', hue='target', kde=True, bins=bins)
+               sns.despine()
+               plt.show()
+
+          else:
+               sns.histplot(data=pca_data, x='principal component 2', hue='target', kde=True, bins=bins)
+               sns.despine()
+               plt.show()
+
+
+    def pca_loading_plot(self, upper_bound, lower_bound):
+          
+          sns.scatterplot(data=self.loading_data, 
+                x='principal component 1',
+                y='principal component 2',
+                color='lightgrey')
+
+          cond1 = self.loading_data['principal component 1'] > upper_bound
+          cond2 = self.loading_data['principal component 1'] < lower_bound
+
+
+          annot_loading_data = self.loading_data[cond1 | cond2]
+
+          sns.scatterplot(data=annot_loading_data,
+                         x='principal component 1',
+                         y='principal component 2',
+                         color='lightblue')
+          indices = annot_loading_data.index.tolist()
+
+          texts = [plt.text(annot_loading_data['principal component 1'][idx],
+                         annot_loading_data['principal component 2'][idx],
+                         annot_loading_data['Genes'][idx], ha='center', va='center', fontsize=9) for idx in indices]
+          
+          adjust_text(texts, arrowprops = dict(arrowstyle = '-', color = 'black'))
+          sns.despine()
+          plt.show()
+
     def pca_plot(self, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), savefig=False):
         
         """
@@ -118,7 +176,7 @@ class DimensionalityReduction:
 
         if savefig:
             fig.savefig('pca_plots.pdf', bbox_inches='tight', transparent=True)
-    
+            
     def int_pca_plot(self, n_rows=1, n_cols=1, titles=[''], height=500, width=700):
 
           """
