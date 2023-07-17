@@ -146,3 +146,24 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
         # introduce np.nan
         data = data.replace('Filtered', np.nan)
         self.data = data
+
+    def reorder_columns(self):
+
+        # reorder the columns (string first, float last)
+        float_cols = self.data.select_dtypes(float).columns.to_list()
+        string_cols = self.data.select_dtypes('string').columns.to_list()
+
+        self.data = self.data[string_cols + float_cols]
+
+    def synchronize_data_and_annotation(self, annotation, sample_id):
+
+        # synchronize data and annotation by a specific sample ID
+
+        sample_id_data = self.data.select_dtypes(float).columns
+        sample_id_annot = annotation[sample_id].tolist()
+
+        intersec = list(set(sample_id_annot).intersection(set(sample_id_data)))
+
+        annotation = annotation[annotation[sample_id].isin(intersec)]
+
+        return annotation
