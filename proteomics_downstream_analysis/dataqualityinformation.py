@@ -5,8 +5,6 @@ import textwrap
 import seaborn as sns
 from matplotlib.patches import Patch
 import matplotlib.pyplot as plt
-import streamlit as st
-from .utils import is_jupyter_notebook
 
 class DataQualityInformation:
 
@@ -71,10 +69,6 @@ class DataQualityInformation:
         if savefig == True:
             fig.savefig('missing_values_lineplot.pdf', bbox_inches='tight', transparent=True)
 
-        # if is_jupyter_notebook():
-        #     fig.show()
-        # else:
-        #     st.pyplot(fig) 
 
     def _missing_vals_heatmap(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
 
@@ -130,11 +124,6 @@ class DataQualityInformation:
 
         if savefig == True:
             fig.savefig('missing_values_heatmap.pdf', bbox_inches='tight', transparent=True)
-
-        # if is_jupyter_notebook():
-        #     fig.show()
-        # else:
-        #     st.pyplot(fig) 
 
     def _missing_vals_barplot(self, n_rows=1, n_cols=1, titles=[''], wrap=8, figsize=(10, 5), savefig=False):
         """
@@ -196,12 +185,9 @@ class DataQualityInformation:
         if savefig == True:
             fig.savefig('mean_missing_values_barplot.pdf', bbox_inches='tight', transparent=True)
 
-        # if is_jupyter_notebook():
-        #     fig.show()
-        # else:
-        #     st.pyplot(fig) 
 
     def _clustermap_pearson_corr(self, figsize=(5, 5), titles=[''], savefig=False):
+
         """
         Plot the Pearson correlation between the features as a clustermap
 
@@ -253,11 +239,6 @@ class DataQualityInformation:
             
             if savefig == True:
                 plt.savefig(f'clustermap_pearson_corr_{title}.pdf', bbox_inches='tight', transparent=True)
-            
-            # if is_jupyter_notebook():
-            #     plt.show()
-            # else:
-            #     st.pyplot(g)
 
     def _calculate_coef_var(self, data):
 
@@ -281,7 +262,7 @@ class DataQualityInformation:
             cv_data[i] = (data[i].std(axis=1)/data[i].mean(axis=1))*100
             
         return cv_data
-    
+
     def _cv_kdeplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
         """
 
@@ -329,11 +310,6 @@ class DataQualityInformation:
         if savefig == True:
             
             fig.savefig('coef_var_kdeplot.pdf', bbox_inches='tight', transparent=True)
-
-        # if is_jupyter_notebook():
-        #     fig.show()
-        # else:
-        #     st.pyplot(fig) 
     
     def _cv_violinplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
 
@@ -390,13 +366,8 @@ class DataQualityInformation:
         
         if savefig == True:
             fig.savefig('coef_var_violinplot.pdf', bbox_inches='tight', transparent=True)
-        
-        # if is_jupyter_notebook():
-        #     fig.show()
-        # else:
-        #     st.pyplot(fig) 
-    
-    def _number_ids_barplot(self, n_rows=1, n_cols=1, titles=[''], wrap=8, figsize=(10, 5), savefig=False):
+
+    def number_ids_barplot(self, n_rows=1, n_cols=1, titles=[''], wrap=8, figsize=(10, 5), savefig=False):
 
         """
         Plot the number of identified proteins for each sample as a barplot
@@ -453,11 +424,6 @@ class DataQualityInformation:
         if savefig == True:
             fig.savefig('number_of_ids_barplot.pdf', bbox_inches='tight', transparent=True)
 
-        # if is_jupyter_notebook():
-        #     fig.show()
-        # else:
-        #     st.pyplot(fig) 
-
     def data_quality_info_plot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
         """
         Plot the data quality information
@@ -496,4 +462,109 @@ class DataQualityInformation:
         self._cv_violinplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
 
         # show proteome depth
-        self._number_ids_barplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
+        self.number_ids_barplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
+
+    
+    def calc_depth(self, data, normalize=None):
+    
+        '''
+        depth = number of valid values in each sample
+        '''
+
+        # calculate depth
+        float_data = data.select_dtypes(float)
+
+        if normalize is None:
+            depth = float_data.notnull().sum()
+        
+        elif normalize == 'percent':
+            depth = float_data.notnull().mean() * 100
+        
+        # rename data
+        depth_renames = {'index': 'groups', 
+                        0: 'depth'}
+
+        data_depth = pd.DataFrame(depth).reset_index().rename(columns=depth_renames)
+
+        return data_depth
+
+    def calc_completeness(self, data, normalize=None):
+        
+        '''
+        completeness = number of valid values in each feature
+        '''
+
+        # calculate completeness
+        float_data = data.select_dtypes(float)
+        groups = float_data.columns.unique()
+        data_completeness = pd.DataFrame()
+
+        if normalize is None:
+            for group in groups:    
+                data_completeness[group] = float_data[group].notnull().sum(axis=1)
+        
+        if normalize == 'percent':
+            for group in groups:
+                data_completeness[group] = float_data[group].notnull().mean(axis=1) * 100
+
+        data_completeness = data_completeness.melt()
+        data_completeness.columns = ['groups', 'completeness']
+
+        return  data_completeness
+
+    def depth_dist(self, data, figsize=(10, 4), normalize=None):
+
+        depth = self.calc_depth(data, normalize)
+
+        fig, ax = plt.subplots(1, 2, figsize=figsize)
+        sns.histplot(data=depth,
+                x='depth',
+                hue='groups',
+                kde=True,
+                alpha=0.5,
+                ax =ax[0],
+                stat='percent')
+
+        sns.rugplot(data=depth,
+                x='depth',
+                hue='groups',
+                alpha=0.5,
+                ax =ax[0])
+
+        sns.ecdfplot(data=depth,
+                x='depth',
+                hue='groups',
+                ax =ax[1])
+        fig.tight_layout()
+
+    def completeness_dist(self, data, figsize=(10, 4), normalize=None):
+
+        completeness = self.calc_completeness(data, normalize)
+
+        fig, ax = plt.subplots(1, 2, figsize=figsize)
+
+        sns.histplot(data=completeness,
+                x='completeness',
+                hue='groups',
+                kde=True,
+                alpha=0.5,
+                ax =ax[0],
+                stat='percent')
+
+        sns.rugplot(data=completeness,
+                x='completeness',
+                hue='groups',
+                alpha=0.5,
+                ax =ax[0])
+
+        sns.ecdfplot(data=completeness,
+                x='completeness',
+                hue='groups',
+                ax =ax[1])
+        fig.tight_layout()
+
+    def depth_completeness_dist(self, data, figsize, normalize):
+        
+        # plot completeness and depth of data
+        self.depth_dist(data, figsize, normalize)
+        self.completeness_dist(data, figsize, normalize)

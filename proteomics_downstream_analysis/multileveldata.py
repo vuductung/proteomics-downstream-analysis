@@ -1,9 +1,13 @@
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+from proteomics_downstream_analysis.dataqualityinformation import DataQualityInformation
 
-class MultiLevelData():
+class MultiLevelData(DataQualityInformation):
     """ This class encapsulates data wrangling methods for multi level data """
 
-    def __init__(self, filepath):
+    def __init__(self):
         pass
     
     def multi_level_data(self, annotation, multilevel_cols):
@@ -100,9 +104,75 @@ class MultiLevelData():
         elif summary_statistic == 'median':
             summary_data = data_copy.groupby(level=[level, output_level], axis=1).median()
 
+        elif summary_statistic == 'sd':
+            summary_data = data_copy.groupby(level=[level, output_level], axis=1).std()
+
         summary_data = self.single_level_data(output_level, summary_data)
         string_data = self.single_level_data(output_level, self.multilevel_data.select_dtypes('string'))
         summary_data = string_data.merge(summary_data, left_index=True, right_index=True)
         self.summary_data = summary_data.copy()
 
         return summary_data
+    
+    def cv_plot(self, data, figsize=(8, 4)):
+        
+        # calculate cv
+        cv_data = self._calculate_coef_var(data)
+        cv_data = cv_data.melt()
+        cv_data.columns = ['groups', 'CV in %']
+
+        # plot data
+        fig, axes = plt.subplots(1, 2, figsize=figsize)
+
+        sns.kdeplot(cv_data,
+                    x='CV in %',
+                    hue='groups',
+                    ax=axes[0])
+
+        sns.ecdfplot(cv_data,
+                    x='CV in %',
+                        hue='groups',
+                        ax=axes[1])
+        fig.tight_layout()
+
+    def pearson_corr_clustermap(self, levels, labels):
+
+        sgl_lvl_iterator = self.multilevel_iterator(levels)
+        corr_data = [df.corr(numeric_only=True) for df in sgl_lvl_iterator]
+
+        luts = []
+        sa_type_no = 0
+        col_palette = sns.color_palette("Set3")
+        for df in corr_data:
+                luts.append(dict(zip(df.index.unique(), col_palette[sa_type_no:])))
+                sa_type_no += len(df.index.unique())
+
+        row_cols = [pd.Series(df.index).map(lut) for df, lut in zip(corr_data, luts)]
+        row_cols = pd.concat(row_cols, axis=1)
+        row_cols.columns = labels
+
+        cluster_data = corr_data[0].reset_index(drop=True)
+        cluster_data.columns = cluster_data.index
+
+        g = sns.clustermap(data=cluster_data,
+                        cmap=sns.diverging_palette(220, 20, as_cmap=True),
+                        row_colors=row_cols,
+                        col_colors=row_cols,
+                        yticklabels=False,
+                        xticklabels=False)
+
+        handles = [Patch(facecolor=lut[name]) for lut in luts for name in lut]
+        labels = [key for lut in luts for key in lut.keys()]
+        plt.legend(handles,
+                labels, 
+                bbox_to_anchor=(1.20, 0.8),
+                bbox_transform=plt.gcf().transFigure,
+                loc='upper right',
+                ncol=2)
+        plt.show()
+
+    def multilevel_iterator(self, levels):
+
+        sgl_lvl_iterator = [self.single_level_data(level) for level in levels]
+
+        return sgl_lvl_iterator
