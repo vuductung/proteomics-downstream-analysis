@@ -5,6 +5,7 @@ import textwrap
 import seaborn as sns
 from matplotlib.patches import Patch
 import matplotlib.pyplot as plt
+from adjustText import adjust_text
 
 class DataQualityInformation:
 
@@ -367,7 +368,28 @@ class DataQualityInformation:
         if savefig == True:
             fig.savefig('coef_var_violinplot.pdf', bbox_inches='tight', transparent=True)
 
-    def number_ids_barplot(self, n_rows=1, n_cols=1, titles=[''], wrap=8, figsize=(10, 5), savefig=False):
+    def abundance_plot(self, data, top=3):
+        
+        # calculate the mean log2 intenstiy for each feature
+        mean_data = data.mean(axis=1, numeric_only=True)
+        x = np.arange(len(mean_data))
+        y = sorted(mean_data.values)[::-1]
+
+        # plot data
+        sns.scatterplot(x=x, y=y)
+        plt.xlabel('Rank')
+        plt.ylabel('Abundance')
+
+        # annotate the top features
+        idx_sorted = np.argsort(mean_data)[::-1]
+        annotation = data['Genes'].squeeze()[idx_sorted].reset_index(drop=True)
+
+        texts = [plt.text(x[idx], y[idx], annotation[idx], ha='center', va='center', fontsize=9) for idx in np.arange(top)]
+        adjust_text(texts, arrowprops = dict(arrowstyle = '-', color = 'black'))
+
+        plt.show()
+
+    def show_number_ids(self, n_rows=1, n_cols=1, titles=[''], wrap=8, figsize=(10, 5), savefig=False):
 
         """
         Plot the number of identified proteins for each sample as a barplot
@@ -414,7 +436,18 @@ class DataQualityInformation:
         for dataset, axes, title in zip(datasets, np.array(ax).flatten(), titles):
             id_data = dataset.select_dtypes(float).notna().sum(axis=0)
             id_data.index = [textwrap.fill(i, wrap) for i in id_data.index]
-            sns.barplot(x=id_data.index, y=id_data.values, errorbar='sd', capsize=.3, errwidth=1.5, ax=axes,color='skyblue')
+            
+            sns.swarmplot(y=id_data.values,
+                          x=id_data.index,
+                          color='black',
+                          size=3,
+                          ax=axes)
+
+            sns.violinplot(y=id_data.values,
+                           x=id_data.index, 
+                           palette=sns.color_palette("Set2"),
+                           ax=axes)
+
             axes.set(ylabel='# identifications')
             axes.set_title(title)
             sns.despine()
@@ -462,7 +495,7 @@ class DataQualityInformation:
         self._cv_violinplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
 
         # show proteome depth
-        self.number_ids_barplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
+        self.show_number_ids(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
 
     
     def calc_depth(self, data, normalize=None):

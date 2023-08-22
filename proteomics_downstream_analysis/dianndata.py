@@ -26,6 +26,28 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
             self.data = pd.read_csv(filepath, delimiter='\t')
             self.datasets = []
 
+    def reorder_index(self, data, template, index):
+        """
+        Reorder the index of a dataframe to match a template
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            Data to be reordered
+        template : list
+            Template to be used for the reordering
+        index : str
+            Index to be reordered
+        Returns
+        -------
+        reordered_data : pd.DataFrame
+            Data with the reordered index
+        """
+        
+        reordered_data = data.set_index(index).reindex(template)
+    
+        return reordered_data
+
     def update_col_names(self, col_names):
             
         """

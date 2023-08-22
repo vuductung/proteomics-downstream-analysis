@@ -54,7 +54,7 @@ class Statistics:
         for a, b in comparisons:
             
             # T test for each row pair.
-            t_stats, pvalues = stats.ttest_ind(a=self.data[a], b=self.data[b], axis=1)
+            t_stats, pvalues = stats.ttest_ind(a=self.data[a], b=self.data[b], axis=1, nan_policy='omit')
 
             t_stat_data[f'{a}/{b}'] = t_stats
 

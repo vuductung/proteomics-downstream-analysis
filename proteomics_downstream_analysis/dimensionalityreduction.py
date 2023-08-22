@@ -128,7 +128,7 @@ class DimensionalityReduction:
           sns.despine()
           plt.show()
 
-    def pca_plot(self, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), savefig=False):
+    def pca_plot(self, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), kde=False, savefig=False):
         
         """
         Plot PCA for one or more datasets.
@@ -164,16 +164,19 @@ class DimensionalityReduction:
         fig, ax = plt.subplots(n_rows, n_cols, figsize=figsize)
 
         for data_set, axes, title in zip(pca_data, np.array(ax).flatten(), titles):
-            sns.scatterplot(data=data_set[1], x='principal component 1', y='principal component 2', hue='target', ax=axes)
+            if kde == True:
+                sns.kdeplot(data=data_set[1], x='principal component 1', y='principal component 2', hue='target', ax=axes)
+            else:
+               sns.scatterplot(data=data_set[1], x='principal component 1', y='principal component 2', hue='target', ax=axes)
             pc1 = "%.2f" % (data_set[0].explained_variance_ratio_[0] * 100)
             pc2 = "%.2f" % (data_set[0].explained_variance_ratio_[1] * 100)
             axes.set(xlabel=f'PC1 {pc1}%', ylabel=f'PC2 {pc2}%')
             axes.set_title(title)
-            axes.legend(loc='best')
             sns.despine()
 
         fig.tight_layout()
-
+        plt.show()
+     
         if savefig:
             fig.savefig('pca_plots.pdf', bbox_inches='tight', transparent=True)
             

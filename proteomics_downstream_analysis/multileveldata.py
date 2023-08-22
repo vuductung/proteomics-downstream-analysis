@@ -8,9 +8,10 @@ class MultiLevelData(DataQualityInformation):
     """ This class encapsulates data wrangling methods for multi level data """
 
     def __init__(self):
+
         pass
     
-    def multi_level_data(self, annotation, multilevel_cols):
+    def get_multi_level_data(self, annotation, multilevel_cols):
         
         """
         Get multi level data
