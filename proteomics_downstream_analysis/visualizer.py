@@ -154,7 +154,7 @@ class Visualizer:
 
             # annotation
             if indices:
-                texts = [axes.text(self.fc_data[i][idx], self.pv_data[i][idx], self.fc_data[gene_column][idx], ha='center', va='center', fontsize=9) for idx in indices]
+                texts = [axes.text(self.fc_data[i][idx], self.pv_data[i][idx], self.fc_data[gene_column][idx], ha='center', va='center', fontsize=9) for idx in set(indices)]
                 adjust_text(texts, arrowprops = dict(arrowstyle = '-', color = 'black'), ax=axes)
             
             else:

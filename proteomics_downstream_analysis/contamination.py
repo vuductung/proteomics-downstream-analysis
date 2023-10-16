@@ -6,303 +6,377 @@ import seaborn as sns
 
 from scipy import stats
 
-class ContaminationAnalysis:
+class ContaminationAnalysis():
 
-    """ This class contains methods for detecting and removing contamination in a 2D dataframe. """
+    """
+    This class contains methods for detecting and removing contamination in a 2D dataframe.
+    """
     
     def __init__(self):
         pass
     
-    def zscore_outlier_plot(self, n_row, n_col, height=3, width=8, experimental_group=True, savefig=False):
+    def sort_by_column_names(self, data):
+
+        # sort data by column names
+        string_data = data.select_dtypes('string')
+        float_data = data.select_dtypes(float)
+
+        float_data = float_data.sort_index(axis=1)
+        data = string_data.join(float_data)
+
+        return data
+
+    def robust_zscore(self, data):
+
+        # get the robust zscore 
+        data = data.select_dtypes('float')
+        median = data.median(axis=1).values.reshape(-1,1)
+        mad = stats.median_abs_deviation(data, axis=1, nan_policy='omit').reshape(-1,1)
+        robust_zscores = 0.6745*(data-median)/mad
+        return robust_zscores
+
+    def number_of_protein_outliers(self, array):
+
+        # compute the number of outliers for each protein
+        above = (array > 3.5).sum(axis=0)
+        below = (array < -3.5).sum(axis=0)
+
+        protein_outliers = above + below
+
+        return protein_outliers.values
+
+    def upper_limit(self, protein_outliers):
+
+        # compute the upper limit for outliers
+        q1 = np.percentile(protein_outliers, 25)
+        q3 = np.percentile(protein_outliers, 75)
+        iqr = q3-q1
+        upper_lim = q3 + 1.5*iqr
+
+        return upper_lim
+
+    def outliers(self, upper_lim, protein_outliers):
+
+        # get the mask to filter outliers
+        mask = np.greater(protein_outliers, upper_lim)
+
+        return mask
+
+    def outlier_plot(self, data, plot='bar', kind='zscore', panel=None, type='RBC'):
+
+        groups = data.select_dtypes(float).columns.unique()
+        len_groups = len(groups)
+        fig, ax = plt.subplots(1, len_groups, figsize=(20, 5))
+        
+        if kind == 'zscore':
+        
+            output = [self.compute_zscore_outliers(data[i])[1:3] for i in groups]
+
+        elif kind == 'contamination':
+            
+            output = [self.compute_contamination_outlier(data[['Genes',i]], panel, type)[:2] for i in groups]
+
+        elif kind == 'missing values':
+
+            output = [self.compute_missing_values_outlier(data[i])[:2] for i in groups]
+
+        # plot the data
+        for values, axes, group in zip(output, ax.flat, groups):
+            outliers = values[0]
+            upper_lim = values[1]
+            
+            if plot == 'bar':
+                sns.barplot(x=[*range(len(outliers))],
+                            y=outliers,
+                            color='lightgrey', 
+                            ax= axes)
+            
+                axes.set_title(f'{group}')
+                axes.set_ylabel('outlier frequency')
+                axes.axhline(y = upper_lim, color = 'red', linestyle = '--')
+            
+            if plot == 'hist':
+                sns.histplot(x=outliers,
+                            color='lightgrey', 
+                            ax= axes)
+            
+                axes.set_title(f'{group}')
+                axes.set_ylabel('outlier frequency')
+                axes.axvline(x = upper_lim, color = 'red', linestyle = '--')
+                
+        fig.tight_layout()
+
+    def compute_zscore_outliers(self, data):
+
+        # sort data
+        data = self.sort_by_column_names(data)
+
+        # calculate robus zscores
+        robust_zscores = self.robust_zscore(data)
+
+        # get the protein outliers
+        protein_outliers = self.number_of_protein_outliers(robust_zscores)
+
+        # get the upper limit (boxplot)
+        upper_lim = self.upper_limit(protein_outliers)
+
+        # get the mask to filter outliers
+        mask = self.outliers(upper_lim, protein_outliers)
+        
+        return robust_zscores, protein_outliers, upper_lim, mask
+
+    def zscore_outlier(self, data, experimental=True, remove=False):
+        
+        # sort data
+        data = self.sort_by_column_names(data)
+
+        # compute the robust zscore to find outliers
+        # within experimental group or all data
+        if experimental == True:
+
+            master_mask = np.array([], dtype=bool)  
+
+            for i in data.select_dtypes(float).columns.unique():
+                _, _, _, mask = self.compute_zscore_outliers(data[i])
+                master_mask = np.concatenate((master_mask, mask))
+
+        else:
+
+            _, _, _, master_mask = self.compute_zscore_outliers(data)
+
+        # get number of string cols to correct the inliers/outliers index
+        number_of_string_cols = len(data.select_dtypes('string').columns)
+
+        if remove == True:
+
+            inliers = np.where(~(master_mask))[0]
+            inliers = inliers + number_of_string_cols
+            inliers = np.concatenate((np.arange(number_of_string_cols), inliers))
+            data = data.iloc[:, inliers]
+
+            return data
+        
+        else:
+            return np.where(master_mask)[0] + number_of_string_cols
+        
+    def compute_rbc_total_ratio(self, data, panel, type='RBC'):
+
+        # calculat the RBC to total protein ratio
+        total = data.sum(axis=0, numeric_only=True)
+        contam = panel[panel['Type'] == type]['Gene names'].tolist()
+        rbc_sum = data[data['Genes'].isin(contam)].sum(axis=0,
+                                                numeric_only=True)
+        rbc_total_ratio = rbc_sum/total
+
+        return rbc_total_ratio.values
     
-        """
-        Detecting outliers in a 2D dataframe using robust zscore and 3.5/-3.5 cutoff (upper and lower outliers)
+    def compute_contamination_outlier(self, data, panel, type='RBC'):
+            
+            # sort data
+            data = self.sort_by_column_names(data)
+
+            # calculate rbc to total protein ratio
+            rbc_total_ratio = self.compute_rbc_total_ratio(data, panel, type)
+
+            # get the upper limit (boxplot)
+            upper_lim = self.upper_limit(rbc_total_ratio)
+
+            # get the mask to filter outliers
+            mask = self.outliers(upper_lim, rbc_total_ratio)
+
+            return rbc_total_ratio, upper_lim, mask 
+    
+    def contamination_outlier(self, data, panel, type='RBC', remove=False, experimental=True):
+
+        # compute contamination outliers
+        if experimental == True:
+            master_mask = np.array([], dtype=bool)  
+            for i in data.select_dtypes(float).columns.unique():
+                _, _, mask = self.compute_contamination_outlier(data[['Genes', i]], panel, type)
+                master_mask = np.concatenate((master_mask, mask))
+
+        else:
+            _, _, master_mask = self.compute_contamination_outlier(data, panel, type)
+
+        # get number of string cols to correct the inliers/outliers index
+        number_of_string_cols = len(data.select_dtypes('string').columns)
+
+        if remove == True:
+            inliers = np.where(~(master_mask))[0]
+            inliers = inliers + number_of_string_cols
+            inliers = np.concatenate((np.arange(number_of_string_cols), inliers))
+            data = data.iloc[:, inliers]
+            return data
+        
+        else:
+            return np.where(master_mask)[0] + number_of_string_cols
+        
+    def contamination_outlier_plot(self, data, panel, experimental=True, type='RBC'):
+
+        # compute the robust zscore to find outliers
+        if experimental == True:
+
+            groups = data.select_dtypes(float).columns.unique()
+            len_groups = len(groups)
+            fig, ax = plt.subplots(1, len_groups, figsize=(20, 5))
+
+            for group, axes in zip(groups, ax.flat):
+                rbc_total_ratio, upper_lim, _  = self.compute_contamination_outlier(data[group], panel, type)
+
+                # plot the data
+                sns.barplot(x=[*range(len(rbc_total_ratio))],
+                            y=rbc_total_ratio,
+                            color='lightgrey', 
+                            ax= axes)
+                
+                axes.set_ylabel('outlier frequency')
+                axes.axhline(y = upper_lim, color = 'red', linestyle = '--')
+            
+            fig.tight_layout()
+
+    def count_missing_values(self, data):
+
+        nan_values = data.select_dtypes(float).isna().sum(axis=0).values
+
+        return nan_values
+    
+    def compute_missing_values_outlier(self, data):
+
+        # sort data
+        data = self.sort_by_column_names(data)
+
+        # count missing values
+        nan_values = self.count_missing_values(data)
+
+        # get the upper limit (boxplot)
+        upper_lim = self.upper_limit(nan_values)
+
+        # get the mask to filter outliers
+        mask = self.outliers(upper_lim, nan_values)
+
+        return nan_values, upper_lim, mask
+    
+    def missing_values_outlier(self, data, experimental=True, remove=False):
+
+        if experimental == True:
+            master_mask = np.array([], dtype=bool)  
+            for i in data.select_dtypes(float).columns.unique():
+                _, _, mask = self.compute_missing_values_outlier(data[i])
+                master_mask = np.concatenate((master_mask, mask))
+        
+        else:
+             _, _, master_mask = self.compute_missing_values_outlier(data)
+
+        # get number of string cols to correct the inliers/outliers index
+        number_of_string_cols = len(data.select_dtypes('string').columns)
+
+        if remove == True:
+            inliers = np.where(~(master_mask))[0]
+            inliers = inliers + number_of_string_cols
+            inliers = np.concatenate((np.arange(number_of_string_cols), inliers))
+            data = data.iloc[:, inliers]
+            return data
+        
+        else:
+            return np.where(master_mask)[0] + number_of_string_cols
+
+    def missing_values_outlier_plot(self, data, experimental):
+
+        # compute the robust zscore to find outliers
+        if experimental == True:
+
+            groups = data.select_dtypes(float).columns.unique()
+            len_groups = len(groups)
+            fig, ax = plt.subplots(1, len_groups, figsize=(20, 5))
+
+            for group, axes in zip(groups, ax.flat):
+                nan_values, upper_lim, _  = self.compute_missing_values_outlier(data[group])
+
+                # plot the data
+                sns.barplot(x=[*range(len(nan_values))],
+                            y=nan_values,
+                            color='lightgrey', 
+                            ax= axes)
+                
+                axes.set_ylabel('outlier frequency')
+                axes.axhline(y = upper_lim, color = 'red', linestyle = '--')
+            
+            fig.tight_layout()
+
+    def outlier(self, data, kind='zscore', remove=False, panel=None, type='RBC'):
+
+        '''
+        docstring
+        An outlier algorithm using the z-score and the IQR to detect outliers
 
         Parameters
         ----------
-        n_row : int
-            Number of rows in the subplot
-            
-        n_col : int
-            Number of columns in the subplot
-            
-        height : int
-            Height of the figure
-             (Default value = 3)
-        width : int
-            Width of the figure
-             (Default value = 8)
-        experimental_group : bool
-            If True robust zscore will be calculated across
-            experimental group. If false, across entire dataframe
-             (Default value = True)
+        data : pd.DataFrame
+            data to be imputed
 
-        savefig : bool
-            If True, figure will be saved as pdf
-             (Default value = False)
+        kind : string
+            what kind of outlier detection algorithm to use. 'zscore' for 
+            zscore algorithm, 'contamination' to detect e.g. RBC contamination
+            and 'missing values' for detecting outliers based on the numbers
+            of missing values
 
-        Returns
-        -------
-        outliers : list
-            List of outliers with sample name and sample measurement order
-        
-        """
-        # calculate zscore across each experimental group
-        if experimental_group == True: 
-            testing_data = self.data.select_dtypes('float')
-            
-            # prepare dataset for zscore calculation. Retain column names and corresponding index
-            columns=[*zip(testing_data.columns, range(len(testing_data.columns)))]
-            testing_data.columns = pd.MultiIndex.from_tuples(columns)
-            testing_data = testing_data.sort_index(level=0, axis=1)
+        remove : boolean
+            if True removes outliers from dataset
 
-            frequency_list = []
-            
-            # calculate zscore across each experimental group
-            for col in  sorted(list(set(i[0] for i in testing_data.columns))):
-                
-                median = testing_data[col].median(axis=1).values.reshape(-1,1)
-                mad = stats.median_abs_deviation(testing_data[col], axis=1).reshape(-1,1)
+        panel: pd.DataFrame
+            a panel that includes the kind of contamination and the Protein.Ids
+            of each contamination
 
-                zscore_data = (0.6745 * (testing_data[col]-median))/mad
-                above = (zscore_data > 3.5).sum(axis=0)
-                below = (zscore_data < -3.5).sum(axis=0)
-
-                sum_below_above = above + below
-
-                frequency_list = frequency_list + list(sum_below_above.values)
-            
-            # create outlier frequency dataframe
-            frequ_data = pd.DataFrame(np.column_stack([frequency_list, [i[1] for i in testing_data.columns], [i[0] for i in testing_data.columns]]), 
-                                        columns=['frequency', 'sample measurment order', 'sample name'])
-
-            frequ_data['frequency'] = frequ_data['frequency'].astype('float')
-            
-            outliers = []
-            
-            fig, ax = plt.subplots(n_row, n_col)
-            fig.set_figheight(height)
-            fig.set_figwidth(width)
-
-            for col_name, axes in zip(sorted(list(set(i[0] for i in testing_data.columns))), ax.flat):
-                barplot_data = frequ_data[frequ_data['sample name']==col_name]
-                
-                # calculate cutoff for each experimental group
-                q1 = np.percentile(barplot_data['frequency'], 25)
-                q3 = np.percentile(barplot_data['frequency'], 75)
-                iqr = q3-q1
-                upper_limit = q3 + 1.5*iqr
-                
-                # collect outliers
-                outlier_data = barplot_data[barplot_data['frequency']>upper_limit]
-                outlier = [(sample, idx) for sample, idx in zip(outlier_data['sample name'], outlier_data['sample measurment order'])]
-                outliers += outlier
-                
-                # create a subplot
-                axes.set_title(col_name)
-                sns.barplot(data=barplot_data, y='frequency', x='sample measurment order', color='lightgrey', ax=axes)
-                axes.axhline(y=upper_limit, color='lightgrey', linestyle='--',)
-                plt.setp(axes, ylabel='outlier frequency')
-                sns.despine()
-            
-            fig.tight_layout() 
-            
-            if savefig == True:
-                fig.savefig('zscore_outlier_plot.pdf', bbox_inches='tight')
-            
-            print(outliers)
-            
-            return outliers
-        
-        # calculate zscore across entire dataframe
-        else:
-            testing_data = self.data.select_dtypes('float')
-
-            median = testing_data.median(axis=1).values.reshape(-1,1)
-            mad = stats.median_abs_deviation(testing_data, axis=1).reshape(-1,1)
-            zscore_data = (0.6745 * (testing_data-median))/mad
-            above = (zscore_data > 3.5).sum(axis=0)
-            below = (zscore_data < -3.5).sum(axis=0)
-
-            # create frequency data
-            sum_below_above = above + below
-            sum_below_above_data = pd.DataFrame(sum_below_above, columns=['value'])
-            sum_below_above_data = sum_below_above_data.reset_index().rename(columns={'index':'strain'})
-
-            # calculate cutoff 
-            q1 = np.percentile(sum_below_above_data['value'], 25)
-            q3 = np.percentile(sum_below_above_data['value'], 75)
-            iqr = q3-q1
-            upper_limit = q3 + 1.5*iqr
-            
-            # plot data
-            plt.figure(figsize=(12,6))
-            sns.barplot(y=sum_below_above_data['value'], x=sum_below_above_data.index, hue=sum_below_above_data['strain'], )
-            plt.axhline(y=upper_limit, color='lightgrey', linestyle='--')
-            plt.xlabel('sample measurement order')
-            plt.ylabel('outlier frequency')
-            sns.despine()
-            if savefig == True:
-                fig.savefig('zscore_outlier_plot.pdf', bbox_inches='tight')
-            
-            plt.show()
-
-    def drop_zscore_outlier(self):
-    
-        """
-        Detecting outliers in a 2D dataframe using robust zscore and 3.5/-3.5 cutoff (upper and lower outliers)
-                
-        Returns
-        -------
-        self.data: pandas dataframe
-            dataframe with outliers removed
-
-        """
-        # calculate zscore across each experimental group
-        testing_data = self.data.select_dtypes('float')
-
-        # prepare dataset for zscore calculation. Retain column names and corresponding index
-        columns=[*zip(testing_data.columns, range(len(testing_data.columns)))]
-        testing_data.columns = pd.MultiIndex.from_tuples(columns)
-        testing_data = testing_data.sort_index(level=0, axis=1)
-
-        frequency_list = []
-
-        # calculate zscore across each experimental group
-        for col in sorted(list(set(i[0] for i in testing_data.columns))):
-            
-            median = testing_data[col].median(axis=1).values.reshape(-1,1)
-            mad = stats.median_abs_deviation(testing_data[col], axis=1).reshape(-1,1)
-
-            zscore_data = (0.6745 * (testing_data[col]-median))/mad
-            above = (zscore_data > 3.5).sum(axis=0)
-            below = (zscore_data < -3.5).sum(axis=0)
-
-            sum_below_above = above + below
-
-            frequency_list = frequency_list + list(sum_below_above.values)
-
-        # create outlier frequency dataframe
-        frequ_data = pd.DataFrame(np.column_stack([frequency_list, [i[1] for i in testing_data.columns], [i[0] for i in testing_data.columns]]), 
-                                    columns=['frequency', 'sample measurment order', 'sample name'])
-
-        frequ_data['frequency'] = frequ_data['frequency'].astype('float')
-
-        outliers = []
-
-        for col_name in sorted(list(set(i[0] for i in testing_data.columns))):
-            barplot_data = frequ_data[frequ_data['sample name']==col_name]
-            
-            # calculate cutoff for each experimental group
-            q1 = np.percentile(barplot_data['frequency'], 25)
-            q3 = np.percentile(barplot_data['frequency'], 75)
-            iqr = q3-q1
-            upper_limit = q3 + 1.5*iqr
-            
-            # collect outliers
-            outlier_data = barplot_data[barplot_data['frequency']>upper_limit]
-            outlier = [(sample, idx) for sample, idx in zip(outlier_data['sample name'], outlier_data['sample measurment order'])]
-            outliers += outlier
-
-        outliers_idx = [int(i[1]) + 5 for i in outliers]
-        inliers = [i for i in range(len(self.data.columns)) if i not in outliers_idx]
-        self.data = self.data.iloc[:, inliers]
-
-        return self.data
-    
-    def assess_blood_contam(self, contam_panel, kind='scatter', shift=3, figsize=(12, 3), savefig=False):
-
-        """Assess blood contamination
-
-        Parameters
-        ----------
-        contam_panel : pandas dataframe
-            dataframe containing the list of blood contamination proteins
-            
-        kind : str
-            plot type. Options: 'scatter' or 'histplot' (Default value = 'scatter')
-             (Default value = 'scatter')
-
-        shift : int
-            shift the x-axis by a certain number of units (Default value = 3)
-             (Default value = 3)
-
-        figsize : tuple
-            figure size (Default value = (12, 3)
-             (Default value = (12, 3)
-            
-        savefig :
-             (Default value = False)
+        type = string
+            What kind of contamination should be used e.g. 'RBC' for red blood
+            cell
 
         Returns
         -------
-        plot
-        """
-
-        contam_data_list = []
-        for i in contam_panel['Type'].unique():
-            
-            # calculate the sum of all proteins intensities and all contamination intensities
-            
-            total_protein_sum = self.data.select_dtypes('float').sum(axis=0)
-            contams = contam_panel[contam_panel['Type'] == i]['Gene names']
-            total_contam_sum = self.data[self.data['Genes'].isin(contams)].sum(axis=0, numeric_only=True)
-            
-            # calculate the contamination ratio 
-            contam_data = pd.DataFrame(total_contam_sum/total_protein_sum*100).T
-            contam_data['contam_type'] = i
-            contam_data_list.append(contam_data)
         
-        # prepare dataframe for plotting
-        cont_data_concat = pd.concat(contam_data_list)
-        column_names = [str(i) for i in range(total_protein_sum.shape[0])]
-        cont_data_concat.columns = column_names + ['contam_type']
-        cont_data_concat_melt = cont_data_concat.melt(id_vars='contam_type')
-        
-        if kind == 'scatter':
-        
-            for i in cont_data_concat['contam_type']:
+        array1: np.array
+            outliers with their index (excluding the string columns)
+        array2 : np.array
+            outliers with boolean values (True is an outlier and False
+            is inlier)
 
-                # create an unbiased cutoff using upper limit in boxplot (75th percentile + iqr * 1.5)
-                q1 = np.percentile(cont_data_concat_melt[cont_data_concat_melt['contam_type']==i]['value'], 25)
-                q3 = np.percentile(cont_data_concat_melt[cont_data_concat_melt['contam_type']==i]['value'], 75)
-                iqr = q3-q1    
-                upper_limit = q3 + 1.5*iqr
+        or
 
-                # create plot for each contamination type 
-                plt.figure(figsize=figsize)
-                plt.title(i)
-                sns.scatterplot(data=cont_data_concat_melt[cont_data_concat_melt['contam_type']==i], x= 'variable', y='value', hue='contam_type')
-                plt.legend(loc='upper right')
-                plt.xlabel('sample_number')
-                plt.ylabel('contamination in %')
-                plt.axhline(y=upper_limit, linestyle='--')
-                
-                if savefig == True:
-                    plt.savefig('blood_contam_plot.pdf', bbox_inches='tight')
-                plt.show()
-                
-        elif kind == 'hist' and shift != None:
-            
-            # assessing data quality using contam panel and biased cutoff (mean + 1 x STD)
-            for i in cont_data_concat['contam_type']:
-                mean = np.mean(cont_data_concat_melt[cont_data_concat_melt['contam_type']==i]['value'])
-                std = np.std(cont_data_concat_melt[cont_data_concat_melt['contam_type']==i]['value'])
-                plt.title(i)
-                sns.histplot(cont_data_concat_melt[cont_data_concat_melt['contam_type']==i]['value'], bins=15)
-                plt.axvline(x=mean, color='lightgrey', linestyle='--')
-                plt.axvline(x=mean + std*shift, color='red', linestyle='--')
-                plt.show()
+        data : pd.DataFrame
+            data without outliers
+
+        '''
+        
+        # sort data
+        data = self.sort_by_column_names(data)
+
+        master_mask = np.array([], dtype=bool)  
+
+        for i in data.select_dtypes(float).columns.unique():
+
+            if kind == 'zscore':
+                _, _, _, mask = self.compute_zscore_outliers(data[i])
+                master_mask = np.concatenate((master_mask, mask))
+
+            elif kind == 'contamination':
+                _, _, mask = self.compute_contamination_outlier(data[['Genes', i]], panel, type)
+                master_mask = np.concatenate((master_mask, mask))
+
+            elif kind == 'missing values':
+                _, _, mask = self.compute_missing_values_outlier(data[i])
+                master_mask = np.concatenate((master_mask, mask))
+
+        # get number of string cols to correct the inliers/outliers index
+        number_of_string_cols = len(data.select_dtypes('string').columns)
+
+        if remove == True:
+
+            inliers = np.where(~(master_mask))[0]
+            inliers = inliers + number_of_string_cols
+            inliers = np.concatenate((np.arange(number_of_string_cols), inliers))
+            data = data.iloc[:, inliers]
+
+            return data
         
         else:
-            
-            # assessing data quality using contam panel and unbiased cutoff (upper limit in boxplot)
-            for i in cont_data_concat['contam_type']:
-                q1 = np.percentile(cont_data_concat_melt[cont_data_concat_melt['contam_type']==i]['value'], 25)
-                q3 = np.percentile(cont_data_concat_melt[cont_data_concat_melt['contam_type']==i]['value'], 75)
-                iqr = q3-q1    
-                upper_limit = q3 + 1.5*iqr
-                plt.title(i)
-                sns.histplot(cont_data_concat_melt[cont_data_concat_melt['contam_type']==i]['value'], bins=15)
-                plt.axvline(x=upper_limit, color='lightgrey', linestyle='--')
-                plt.show()
+            return np.where(master_mask)[0], master_mask

@@ -10,7 +10,9 @@ from proteomics_downstream_analysis.dataqualityinformation import DataQualityInf
 
 class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, Statistics, Visualizer, DataQualityInformation):
     
-    """ This class encapsulates methods for DIANN output tables """
+    """
+    This class encapsulates methods for DIANN output tables
+    """
     
     def __init__(self, filepath=None):
 
@@ -26,30 +28,20 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
             self.data = pd.read_csv(filepath, delimiter='\t')
             self.datasets = []
 
-    def reorder_index(self, data, template, index):
-        """
-        Reorder the index of a dataframe to match a template
+    def sort_by_column_names(self, data):
+        '''
+        sort data by column names
+        '''
+        string_data = data.select_dtypes('string')
+        float_data = data.select_dtypes(float)
 
-        Parameters
-        ----------
-        data : pd.DataFrame
-            Data to be reordered
-        template : list
-            Template to be used for the reordering
-        index : str
-            Index to be reordered
-        Returns
-        -------
-        reordered_data : pd.DataFrame
-            Data with the reordered index
-        """
-        
-        reordered_data = data.set_index(index).reindex(template)
-    
-        return reordered_data
+        float_data = float_data.sort_index(axis=1)
+        data = string_data.join(float_data)
 
-    def update_col_names(self, col_names):
-            
+        return data
+
+    def update_col_names(self, data, index, column_name):
+
         """
         Change the colums names of DIANN output tables
         Replicates will have same name
@@ -65,11 +57,13 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
             Updated DIANN output table with new column names
         """
         
-        self.data.columns = ['Protein.Group',
-                             'Protein.Ids',
-                             'Protein.Names',
-                             'Genes', 
-                             'First.Protein.Description'] + col_names
+        template = self.data.select_dtypes('float').columns.tolist()
+        data[index] = data[index].astype('str')
+        updated_col_data = data.set_index(index).reindex(template)
+
+        col_names = updated_col_data[column_name].tolist()
+
+        self.data.columns = self.data.select_dtypes('string').columns.tolist() + col_names
     
     def drop_col(self, col_name):
         """
@@ -85,14 +79,29 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
             Updated DIANN output table with dropped column
         """
         self.data = self.data.drop(col_name, axis=1)
+
         return self.data
     
-    def preprocessing(self):
+    def preprocessing(self, method='simple', completeness=0.5, percentage=0.9, strategy='mean', kind='knn', constant=None):
         
         """
         Prepocess data
         """
-        self.data = self._Preprocessor._process(self.data)
+        
+        if method == 'simple':
+
+            self.data = self._Preprocessor._process(self.data)
+
+        if method == 'hybrid':
+            self.data = self._Preprocessor._hybrid_process(self.data,
+                                                         completeness,
+                                                         percentage,
+                                                         strategy,
+                                                         kind,
+                                                         constant=constant)
+        if method == 'no imputation':
+            self.data = self._Preprocessor._simple_process(self.data,
+                                                           completeness)
 
     def change_dtypes(self):
 
@@ -121,9 +130,10 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
         self.title : list
             List of data titles
         """
-
+        self.data = data.copy()
         self.datasets.append(data)
         self.title.append(title)
+
         print('Data with the title "{}" is added'.format(title))
         print('Total number of datasets: "{}"'.format(len(self.datasets)))
 
@@ -189,3 +199,25 @@ class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, 
         annotation = annotation[annotation[sample_id].isin(intersec)]
 
         return annotation
+    
+    def filter(self, col_name, value, axis):
+
+        """
+        Filter data by column names
+
+        Parameters
+        ----------
+        col_names : list
+            List of column names
+
+        Returns
+        -------
+        self.data : pandas.DataFrame
+            Filtered DIANN output table
+        """
+        if axis == 0:
+            self.data = self.data[self.data[col_name].isin(value)]
+
+        elif axis == 1:
+            self.data = self.data[col_name]
+        return self.data

@@ -389,7 +389,7 @@ class DataQualityInformation:
 
         plt.show()
 
-    def show_number_ids(self, n_rows=1, n_cols=1, titles=[''], wrap=8, figsize=(10, 5), savefig=False):
+    def number_ids_distplot(self, n_rows=1, n_cols=1, titles=[''], wrap=8, figsize=(10, 5), savefig=False):
 
         """
         Plot the number of identified proteins for each sample as a barplot
@@ -455,7 +455,7 @@ class DataQualityInformation:
         fig.tight_layout()
         
         if savefig == True:
-            fig.savefig('number_of_ids_barplot.pdf', bbox_inches='tight', transparent=True)
+            fig.savefig('number_of_ids_distplot.pdf', bbox_inches='tight', transparent=True)
 
     def data_quality_info_plot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
         """
@@ -495,7 +495,7 @@ class DataQualityInformation:
         self._cv_violinplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
 
         # show proteome depth
-        self.show_number_ids(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
+        self.number_ids_distplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
 
     
     def calc_depth(self, data, normalize=None):
@@ -567,7 +567,10 @@ class DataQualityInformation:
         sns.ecdfplot(data=depth,
                 x='depth',
                 hue='groups',
-                ax =ax[1])
+                ax =ax[1], 
+                complementary=True)
+        ax[1].axhline(y=0.5, color='lightgrey', linestyle='--')
+        ax[1].axhline(y=0.8, color='lightgrey', linestyle='--')
         fig.tight_layout()
 
     def completeness_dist(self, data, figsize=(10, 4), normalize=None):
@@ -593,7 +596,10 @@ class DataQualityInformation:
         sns.ecdfplot(data=completeness,
                 x='completeness',
                 hue='groups',
-                ax =ax[1])
+                ax =ax[1], 
+                complementary=True)
+        ax[1].axhline(y=0.5, color='lightgrey', linestyle='--')
+        ax[1].axhline(y=0.8, color='lightgrey', linestyle='--')
         fig.tight_layout()
 
     def depth_completeness_dist(self, data, figsize, normalize):

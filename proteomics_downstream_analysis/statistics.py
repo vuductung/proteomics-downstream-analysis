@@ -1,11 +1,60 @@
 import pandas as pd
 import numpy as np
+
 from statsmodels.stats.multitest import fdrcorrection
 from scipy import stats
+import pingouin as pg
 
-class Statistics:
-    """ """
+from tqdm import tqdm
+from joblib import Parallel, delayed
 
+from proteomics_downstream_analysis.parallelprocessing import ParallelProcessing
+
+class Statistics(ParallelProcessing):
+
+    """
+    Methods for statistical analysis of proteomics data.
+    
+    """
+
+    def prepare_for_ancova(self, data, cov_data):
+
+        data = data.set_index('Protein.Ids').select_dtypes(float).T.reset_index(names='sample')
+
+        data = data = pd.concat([cov_data, data], axis=1)
+
+        return data
+
+    def perform_ancova(self, data, cov_data, cov):
+        
+        proteinids = data['Protein.Ids'].tolist()
+        genes = data['Genes'].tolist()
+        data = self.prepare_for_ancova(data, cov_data)
+
+        results = [pg.ancova(data=data, dv=id, between='sample', covar=cov).iloc[0] for id in tqdm(proteinids)]
+
+        results = pd.DataFrame(results)
+        results['Protein.Ids'] = proteinids
+        results['Genes'] = genes
+        results['qvalue'] = fdrcorrection(results['p-unc'])[1]
+        results['-log10 pvalue'] = -np.log10(results['p-unc'])
+        results = results[['Protein.Ids', 'Genes', 'Source', 'SS', 'DF', 'F','np2', '-log10 pvalue', 'qvalue']]
+        
+        self.ancova_results = results.copy()
+
+        return results
+    
+
+    def ancova(self, data, cov_data, covariates):
+
+        datasets = self.split_data_for_parallel_processing(data)
+        results = Parallel(n_jobs=-1)(delayed(self.perform_ancova)(data, cov_data, covariates) for data in datasets)
+        results = pd.concat(results, axis=0)
+
+        self.ancova_results = results.copy()
+
+        return results
+        
     def anova(self):
         
         f_stat_data = pd.DataFrame()
@@ -18,6 +67,7 @@ class Statistics:
         f_stat, pvalues = stats.f_oneway(*samples, axis=1)
         f_stat_data['f_stat'] = f_stat
         anova_pv_data['pvalue'] = pvalues
+        anova_pv_data['qvalue'] = fdrcorrection(pvalues)[1]
 
         self.f_stat_data = f_stat_data
         self.anova_pv_data = anova_pv_data

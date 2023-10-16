@@ -1,4 +1,7 @@
 from numpy.random import rand
+from sklearn.impute import SimpleImputer, KNNImputer
+import numpy as np
+import pandas as pd
 
 class Imputer:
 
@@ -26,33 +29,82 @@ class Imputer:
 
         return dummy_data
 
-    def simple_impute(self, strategy, data=None, constant=0):
+    def _impute(self, data, kind='simple', strategy='mean', percentage=0.9, constant=None):
         
-        if data is None:
-            imputed_data = self.data.copy()
-
-        else:
-            imputed_data = data.copy()
+        imputed_data = data.select_dtypes(float).copy()
+        imputed_data = imputed_data.sort_index(axis=1)
 
         for col in imputed_data.columns.unique():
+            
+            # create imputer
+            if kind == 'simple':
+                imputer = SimpleImputer(missing_values=np.nan, strategy=strategy, fill_value=constant)
+
+            elif kind == 'knn':
+                n_neighbours = int(np.sqrt(imputed_data[col].shape[1]))
+                imputer = KNNImputer(missing_values=np.nan, n_neighbors=n_neighbours)
 
             # Get column, column missing values and range
-            col = imputed_data[col]
-            col_null = col.isnull()
+            denominator = imputed_data[col].notnull().sum(axis=1)
+            numerator = imputed_data[col].shape[1]
+            null_rows = (denominator/numerator) >= percentage
 
-            # Impute data
-            if strategy == 'mean':
-                col[col_null] = col.mean()
-            
-            elif strategy == 'median':
-                col[col_null] = col.median()
+            # Impute
+            to_be_imputed_rows = imputed_data.loc[null_rows, col]
 
-            elif strategy == 'constant':
-                col[col_null] = constant
+            imputed_data.loc[null_rows, col] = imputer.fit_transform(to_be_imputed_rows.T).T
         
-        self.data = imputed_data
+        new_data = pd.concat([data.select_dtypes('string'), imputed_data], axis=1)
 
-        return self.data
-    
+        return new_data
 
+    def _impute_based_on_gaussian(self, data):
+         
+        """
+        This function imputes missing values in a dataset using a Gaussian distribution.
+        The missing values are imputed by random sampling values from a Gaussian distribution with a mean
+        of 3 standard deviations below the computed mean and a width of 0.3 times the computed standard deviation.
+        The function returns a copy of the imputed dataset with the missing values replaced.
 
+        Parameters
+        ----------
+        data : pd.DataFrame
+            data to be imputed
+
+        Returns
+        -------
+        data : pd.DataFrame
+            data with imputed values
+        """
+        # select only float data
+        float_data = data.select_dtypes('float')
+        na_data = float_data[float_data.isna().any(axis=1)]
+
+        # loop through na_data rows and generate imputed data
+        imp_array = []
+
+        for i in na_data.index: 
+            na_count = na_data.loc[i].isna().sum()
+
+            mean = na_data.loc[i].mean(skipna=True)
+            std = na_data.loc[i].std(skipna=True)
+
+            np.random.seed(i)
+            imp_array.append(list(np.random.normal(loc=mean-3*std, scale=0.3*std, size=na_count)))
+
+        imp_values_list = np.array([imp_value for innerlist in imp_array for imp_value in innerlist])
+
+        copied_data = float_data.copy()
+        columns = float_data.columns
+        copied_data.columns = np.arange(copied_data.shape[1])
+        
+        # impute the data
+        stacked_na_data = copied_data.stack(dropna=False)
+        na_index = stacked_na_data[stacked_na_data.isna()].index
+        stacked_na_data.loc[na_index] = imp_values_list
+        imp_data = stacked_na_data.unstack()
+        imp_data.columns = columns
+        imp_data = data.select_dtypes('string').merge(imp_data, left_index=True, right_index=True)
+        data = imp_data.copy()
+        
+        return data

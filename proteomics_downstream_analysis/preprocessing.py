@@ -1,4 +1,6 @@
 import numpy as np
+import pandas as pd
+from sklearn.impute import SimpleImputer, KNNImputer
 
 class Preprocessing:
     
@@ -44,9 +46,14 @@ class Preprocessing:
         data : pd.DataFrame
             data with log2 transformed float data
         """
+        
+        np.seterr(divide = 'ignore') 
 
         for i in data.select_dtypes('float').columns.unique():
             data[i] = np.log2(data[i])
+
+        data.replace([np.inf, -np.inf], np.nan, inplace=True)
+        
         return data
         
     def _filter_for_valid_vals_in_one_exp_group(self, data):
@@ -98,6 +105,36 @@ class Preprocessing:
             data.loc[idx, ['Genes']] = value
 
         return data
+    
+    def _impute(self, data, kind='simple', strategy='mean', percentage=0.9, constant=None):
+        
+        imputed_data = data.select_dtypes(float).copy()
+        imputed_data = imputed_data.sort_index(axis=1)
+
+        for col in imputed_data.columns.unique():
+            
+            # create imputer
+            if kind == 'simple':
+                imputer = SimpleImputer(missing_values=np.nan, strategy=strategy, fill_value=constant)
+
+            elif kind == 'knn':
+                n_neighbours = int(np.sqrt(imputed_data[col].shape[1]))
+                imputer = KNNImputer(missing_values=np.nan, n_neighbors=n_neighbours)
+
+            # Get column, column missing values and range
+            denominator = imputed_data[col].notnull().sum(axis=1)
+            numerator = imputed_data[col].shape[1]
+            null_rows = (denominator/numerator) >= percentage
+
+            # Impute
+            to_be_imputed_rows = imputed_data.loc[null_rows, col]
+
+            imputed_data.loc[null_rows, col] = imputer.fit_transform(to_be_imputed_rows.T).T
+        
+        new_data = pd.concat([data.select_dtypes('string'), imputed_data], axis=1)
+
+        return new_data
+
     
     def _impute_based_on_gaussian(self, data):
          
@@ -174,7 +211,7 @@ class Preprocessing:
 
         return data[bool_array]
 
-    def _filter_for_valid_vals_in_one_exp_group_perc(self, data, percentage):
+    def _filter_for_valid_vals_in_one_exp_group_perc(self, data, completeness):
 
 
         """
@@ -201,7 +238,7 @@ class Preprocessing:
         for col in columns_name:
             numerator = data[col].notna().sum(axis=1)
             denominator = data[col].shape[1]
-            non_na_indices = data[numerator/denominator >= percentage].index.tolist()
+            non_na_indices = data[numerator/denominator >= completeness].index.tolist()
             indices += non_na_indices
 
         indices = list(set(indices))
