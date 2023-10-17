@@ -6,7 +6,6 @@ from scipy import stats
 import pingouin as pg
 
 from tqdm import tqdm
-from joblib import Parallel, delayed
 
 from proteomics_downstream_analysis.parallelprocessing import ParallelProcessing
 
@@ -25,6 +24,10 @@ class Statistics(ParallelProcessing):
 
         return data
 
+    def split_data_by_groups(self, data, groups, sample_col):
+        
+        return [data[data[sample_col].isin(group)] for group in groups]
+    
     def perform_ancova(self, data, cov_data, cov):
         
         proteinids = data['Protein.Ids'].tolist()
@@ -38,22 +41,73 @@ class Statistics(ParallelProcessing):
         results['Genes'] = genes
         results['qvalue'] = fdrcorrection(results['p-unc'])[1]
         results['-log10 pvalue'] = -np.log10(results['p-unc'])
-        results = results[['Protein.Ids', 'Genes', 'Source', 'SS', 'DF', 'F','np2', '-log10 pvalue', 'qvalue']]
+        results = results[['Protein.Ids', 'Genes', 'Source', 'SS',
+                           'DF', 'F','np2', '-log10 pvalue', 'qvalue']]
         
         self.ancova_results = results.copy()
 
         return results
     
+    def ancova(self, datasets, cov_data, covariates):
 
-    def ancova(self, data, cov_data, covariates):
+        return self.paralell_processing(datasets, self.perform_ancova, cov_data, covariates)
 
-        datasets = self.split_data_for_parallel_processing(data)
-        results = Parallel(n_jobs=-1)(delayed(self.perform_ancova)(data, cov_data, covariates) for data in datasets)
-        results = pd.concat(results, axis=0)
+    def two_tailed_ancova(self, dataset, covar_data, meta_col, cov, groups):
 
-        self.ancova_results = results.copy()
+        """
+        A two tailed ancova test for each protein id in the dataset. 
+        The test filters the covariance data and protein group data
+        for each group in groups and thus is performed for each group
+        in groups, preventing the need for post hoc testing. 
 
-        return results
+        Parameters
+        ----------
+        dataset : pd.DataFrame
+            Protein group data (wide format).
+        
+        covar_data : pd.DataFrame
+            Covariance data (long format). It's important that
+            the covariance data should be in the same order as
+            the pg data.
+
+        meta_col : str
+            Column name in covar_data that contains the group
+            information to be filtered on for each group in groups.
+        
+        cov : list
+            List of covariates to be used in the ancova test.
+
+        groups : list
+            List of lists with groups to be compared. 
+            e.g. [('group1', 'group2'), ('group1', 'group3')]
+
+        Returns
+        -------
+        results : pandas.DataFrame
+            Ancova result data for each protein id.
+        pv_data : pandas.DataFrame
+            -log10 pvalue data.
+        qv_data : pandas.DataFrame
+            q-value data. Benjamini-Hochberg adjusted pvalues.
+        """
+
+        results = []
+        pv_data = pd.DataFrame()
+        qv_data = pd.DataFrame()
+        pv_data[['Protein.Ids', 'Genes']] = dataset.reset_index()[['Protein.Ids', 'Genes']].copy()
+        qv_data[['Protein.Ids', 'Genes']] = dataset.reset_index()[['Protein.Ids', 'Genes']].copy()
+
+        for group in groups:
+            data = dataset[group].reset_index()
+            cov_data = covar_data[covar_data[meta_col].isin(group)].reset_index()
+
+            result= self.ancova(data, cov_data, cov)
+            results.append(result)
+
+            pv_data[f'{group[0]}/{group[1]}'] = result['-log10 pvalue'].copy()
+            qv_data[f'{group[0]}/{group[1]}'] = result['qvalue'].copy()
+        
+        return results, pv_data, qv_data
         
     def anova(self):
         
@@ -74,14 +128,17 @@ class Statistics(ParallelProcessing):
 
     def student_ttest(self, comparisons, return_output =False):
     
-        """Unpaired two tailed student's t-test with BH pvalue adjustment and fold change calculation
+        """
+        Unpaired two tailed student's t-test with BH pvalue
+        adjustment and fold change calculation
 
         Parameters
         ----------
         comparisons : list
             List of tuples with comparisons to be made.
         return_output : boolean
-             If True, fc_data, pv_data and qv_data will be returned. (Default value = False)  
+             If True, fc_data, pv_data and qv_data will be returned. 
+             (Default value = False)  
 
         Returns
         -------
