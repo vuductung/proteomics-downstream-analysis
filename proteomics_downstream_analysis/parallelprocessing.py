@@ -1,6 +1,5 @@
 import math
 from joblib import Parallel, delayed
-import pandas as pd
 
 class ParallelProcessing:
 
@@ -34,6 +33,5 @@ class ParallelProcessing:
           
         datasets = self.split_data_for_parallel_processing(dataset)
         results = Parallel(n_jobs=-1)(delayed(method)(data, *args) for data in datasets)
-        results = pd.concat(results, axis=0).reset_index(drop=True)
 
         return results

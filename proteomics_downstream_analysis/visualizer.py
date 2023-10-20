@@ -12,6 +12,8 @@ from plotly.subplots import make_subplots
 import streamlit as st
 from .utils import is_jupyter_notebook
 
+import plotly.io as pio
+
 class Visualizer:
     """ Visualizer class for plotting."""
 
@@ -55,7 +57,7 @@ class Visualizer:
 
         
         """
-        fig, ax = plt.subplots(n_rows, n_cols, figsize = figsize)
+        fig, ax = plt.subplots(n_rows, n_cols, figsize = figsize, layout='tight')
 
         for i, axes in zip(self.fc_data.select_dtypes('float').columns, np.array(ax).flatten()):
             
@@ -171,8 +173,6 @@ class Visualizer:
                     fontsize=12,
                     bbox=dict(boxstyle='round', fc='w', ec='black', alpha=0.3))
 
-            fig.tight_layout()
-
             if savefig == True:
                 fig.savefig(f'{i.replace("/", "_vs_")}_volcano.pdf', bbox_inches = "tight")
 
@@ -214,7 +214,10 @@ class Visualizer:
         if savefig is True:
             plt.savefig('sign_prots_plot.pdf', transparent=True, bbox_inches='tight')
 
-    def int_volcano_plot(self, n_rows, n_cols, height, width, annot_genes =[], upper_fc_cutoff = None, lower_fc_cutoff=None, qv_cutoff = False):
+    def int_volcano_plot(self, n_rows, n_cols, height, width,
+                         annot_genes =[], upper_fc_cutoff = None,
+                         lower_fc_cutoff=None, qv_cutoff = False,
+                         save=False, filename='int_volcano_plot.html'):
 
         indices = self.fc_data[self.fc_data['Genes'].isin(annot_genes)].index.to_list()
 
@@ -335,6 +338,9 @@ class Visualizer:
             font_size=16)
                         )
         fig.update_traces(marker=dict(size=8), selector=dict(mode='markers'))
+        if save == True:
+            # Save the plot as an HTML file
+            pio.write_html(fig, f'{filename}')
 
         # Show the plot
         if is_jupyter_notebook():

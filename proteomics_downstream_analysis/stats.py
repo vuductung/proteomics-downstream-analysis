@@ -28,13 +28,11 @@ class Statistics(ParallelProcessing):
         
         return [data[data[sample_col].isin(group)] for group in groups]
     
-    def perform_ancova(self, data, cov_data, cov):
+    def proteinid_and_genes_extraction(self, data):
         
-        proteinids = data['Protein.Ids'].tolist()
-        genes = data['Genes'].tolist()
-        data = self.prepare_for_ancova(data, cov_data)
-
-        results = [pg.ancova(data=data, dv=id, between='sample', covar=cov).iloc[0] for id in tqdm(proteinids)]
+        return data['Protein.Ids'].tolist(), data['Genes'].tolist()
+    
+    def ancova_dataframe_creation_and_column_modification(self, results, proteinids, genes):
 
         results = pd.DataFrame(results)
         results['Protein.Ids'] = proteinids
@@ -44,70 +42,76 @@ class Statistics(ParallelProcessing):
         results = results[['Protein.Ids', 'Genes', 'Source', 'SS',
                            'DF', 'F','np2', '-log10 pvalue', 'qvalue']]
         
+        return results
+
+    def create_qv_and_pv_dataframe(self, result, group):
+        
+        pv_data = result[['Protein.Ids', 'Genes']].copy()
+        qv_data = result[['Protein.Ids', 'Genes']].copy()
+
+        pv_data[f'{group[0]}/{group[1]}'] = result['-log10 pvalue'].copy()
+        qv_data[f'{group[0]}/{group[1]}'] = result['qvalue'].copy()
+
+        return pv_data, qv_data
+
+    def perform_ancova(self, data, cov_data, cov):
+        
+        proteinids, genes = self.proteinid_and_genes_extraction(data)
+
+        data = self.prepare_for_ancova(data, cov_data)
+
+        results = [pg.ancova(data=data, dv=id, between='sample', covar=cov).iloc[0] for id in tqdm(proteinids)]
+
+        results = self.ancova_dataframe_creation_and_column_modification(results, proteinids, genes)
+        
         self.ancova_results = results.copy()
 
         return results
     
-    def ancova(self, datasets, cov_data, covariates):
-
-        return self.paralell_processing(datasets, self.perform_ancova, cov_data, covariates)
-
-    def two_tailed_ancova(self, dataset, covar_data, meta_col, cov, groups):
-
-        """
-        A two tailed ancova test for each protein id in the dataset. 
-        The test filters the covariance data and protein group data
-        for each group in groups and thus is performed for each group
-        in groups, preventing the need for post hoc testing. 
-
-        Parameters
-        ----------
-        dataset : pd.DataFrame
-            Protein group data (wide format).
-        
-        covar_data : pd.DataFrame
-            Covariance data (long format). It's important that
-            the covariance data should be in the same order as
-            the pg data.
-
-        meta_col : str
-            Column name in covar_data that contains the group
-            information to be filtered on for each group in groups.
-        
-        cov : list
-            List of covariates to be used in the ancova test.
-
-        groups : list
-            List of lists with groups to be compared. 
-            e.g. [('group1', 'group2'), ('group1', 'group3')]
-
-        Returns
-        -------
-        results : pandas.DataFrame
-            Ancova result data for each protein id.
-        pv_data : pandas.DataFrame
-            -log10 pvalue data.
-        qv_data : pandas.DataFrame
-            q-value data. Benjamini-Hochberg adjusted pvalues.
-        """
-
+    def perform_two_tailed_ancova(self, data, cov_data, groups, sample_col, cov):
+       
         results = []
-        pv_data = pd.DataFrame()
-        qv_data = pd.DataFrame()
-        pv_data[['Protein.Ids', 'Genes']] = dataset.reset_index()[['Protein.Ids', 'Genes']].copy()
-        qv_data[['Protein.Ids', 'Genes']] = dataset.reset_index()[['Protein.Ids', 'Genes']].copy()
 
-        for group in groups:
-            data = dataset[group].reset_index()
-            cov_data = covar_data[covar_data[meta_col].isin(group)].reset_index()
+        proteinids, genes = self.proteinid_and_genes_extraction(data)
+        data = self.prepare_for_ancova(data, cov_data)
+        datasets = self.split_data_by_groups(data, groups, sample_col)
 
-            result= self.ancova(data, cov_data, cov)
+        for data in datasets:
+            result = [pg.ancova(data=data, dv=id, between='sample', covar=cov).iloc[0] for id in tqdm(proteinids)]
+            result = self.ancova_dataframe_creation_and_column_modification(result, proteinids, genes)
             results.append(result)
-
-            pv_data[f'{group[0]}/{group[1]}'] = result['-log10 pvalue'].copy()
-            qv_data[f'{group[0]}/{group[1]}'] = result['qvalue'].copy()
         
-        return results, pv_data, qv_data
+        pv_qv_datasets = [self.create_qv_and_pv_dataframe(result, group) for group, result in zip(groups, results)]
+
+        pv_datasets = [dataset[0].set_index(['Protein.Ids', 'Genes']) for dataset in pv_qv_datasets]
+        qv_datasets = [dataset[1].set_index(['Protein.Ids', 'Genes']) for dataset in pv_qv_datasets]
+
+        pv_data = pd.concat(pv_datasets, axis=1)
+        qv_data = pd.concat(qv_datasets, axis=1)
+
+        return pv_data, qv_data, results
+
+    def two_tailed_ancova(self, dataset, cov_data, groups, sample_col, cov):
+        
+        results = self.paralell_processing(dataset, self.perform_two_tailed_ancova, cov_data, groups, sample_col, cov)
+
+        # data preparation
+        pv_data = pd.concat([result[0] for result in results], axis=0).reset_index()
+        qv_data = pd.concat([result[1] for result in results], axis=0).reset_index()
+        res = []
+        
+        for idx in range(len(groups)):
+                res.append(pd.concat([result[2][idx] for result in results], axis=0).reset_index(drop=True))
+
+        return pv_data, qv_data, res
+        
+    def ancova(self, datasets, cov_data, covariates):
+        
+        results = self.paralell_processing(datasets, self.perform_ancova, cov_data, covariates)
+        
+        results = pd.concat(results, axis=0).reset_index(drop=True)
+
+        return results
         
     def anova(self):
         
