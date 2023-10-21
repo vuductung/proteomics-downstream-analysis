@@ -619,7 +619,7 @@ class EnrichmentAnalysis:
                 plt.savefig(f'{idx}_circle_plot.pdf', bbox_inches='tight')
 
 
-    def filter_go_data(self, go_data, godag):
+    def _filter_go_data(self, go_data, godag):
 
         '''
         Filter the go_data by the go terms in the godag
@@ -639,7 +639,7 @@ class EnrichmentAnalysis:
 
         return go_data[go_data['GO term ID'].isin(godag.keys())]
 
-    def calculate_semantic_similarity_between_go_terms(self, go_data, godag, termcounts):
+    def _calculate_semantic_similarity_between_go_terms(self, go_data, godag, termcounts):
         
         '''
         Calculate the semantic similarity between given go terms
@@ -659,7 +659,7 @@ class EnrichmentAnalysis:
             Array with semantic similarity data
         '''
 
-        go_data = self.filter_go_data(go_data, godag)
+        go_data = self._filter_go_data(go_data, godag)
         go_termids = go_data['GO term ID'].tolist()
 
         sem_sims = np.zeros((len(go_termids), len(go_termids)))
@@ -669,7 +669,7 @@ class EnrichmentAnalysis:
 
         return sem_sims
 
-    def perform_mds(self, sem_sims):
+    def _perform_mds(self, sem_sims):
 
         '''
         Perform mutlidimensional scaling
@@ -694,7 +694,7 @@ class EnrichmentAnalysis:
 
         return X_transformed
 
-    def cluster_mds_scores(self, x, n_clusters=25):
+    def _cluster_mds_scores(self, x, n_clusters=25):
         
         '''
         Cluster the MDS scores
@@ -724,7 +724,7 @@ class EnrichmentAnalysis:
 
         return labels, hue
 
-    def calculate_deepest_common_ancestor(self, go_data, labels, godag, ):
+    def _calculate_deepest_common_ancestor(self, go_data, labels, godag, ):
 
         '''
         Calculate the deepest common ancestor for each cluster
@@ -752,7 +752,7 @@ class EnrichmentAnalysis:
             deepest_common_ancestors.append(dca)
         return deepest_common_ancestors
 
-    def calculate_center(self, x, labels):
+    def _calculate_center(self, x, labels):
         
         '''
         Calculate the center of each cluster for plotting
@@ -777,7 +777,7 @@ class EnrichmentAnalysis:
             center.append(np.mean(x_cluster, axis=0))
         return center
 
-    def customwrap(self, s, width=15):
+    def _customwrap(self, s, width=15):
 
         '''
         Wrap string with <br> tag
@@ -843,8 +843,34 @@ class EnrichmentAnalysis:
             plt.savefig(dir, bbox_inches='tight')
         plt.title(title)
         plt.show()
+    
+    def prepare_data_for_enrichment_mds(self, go_data, godag, termcounts, n_clusters):
 
-    def create_plotly_data(self, x, hue, go_data):
+        # filter the go_data to only contain go terms in the godag
+        go_data = self._filter_go_data(go_data, godag)
+
+        # calculate the semantic similarity between given go terms
+        sem_sims = self._calculate_semantic_similarity_between_go_terms(go_data, godag, termcounts)
+
+        # perform mds on the semantic similarity matrix
+        X_transformed = self._perform_mds(sem_sims)
+
+        # cluster the mds scores
+        labels, hue = self._cluster_mds_scores(X_transformed, n_clusters)
+
+        # calculate the center of each cluster
+        centers = self._calculate_center(X_transformed, labels)
+
+        # calculate the deepest common ancestor of each cluster
+        dca = self._calculate_deepest_common_ancestor(go_data, labels, godag)
+
+        # get the names of the go terms and the pvalues
+        names = [textwrap.fill(i, 15) for i in dca]
+        pvalues = go_data['Adjusted P-value'].tolist()
+
+        return X_transformed, hue, labels, names, centers, pvalues
+
+    def create_plotly_data(self, x, hue, go_data, godag):
 
         '''
         Create the data for the interactive plots based on the MDS scores
@@ -863,7 +889,7 @@ class EnrichmentAnalysis:
         data : pandas.DataFrame
             Dataframe with MDS scores, cluster labels, go terms and pvalues
         '''
-
+        go_data = self._filter_go_data(go_data, godag)
         data = pd.DataFrame(x, columns=['MDS1', 'MDS2'])
         data['hue'] = hue
         data['Term'] = go_data['Term'].tolist()
@@ -922,7 +948,7 @@ class EnrichmentAnalysis:
         for i in range(len(np.unique(labels))):
             fig.add_annotation(x=centers[i][0],
                                 y=centers[i][1],
-                                text=list(map(self.customwrap, names))[i],
+                                text=list(map(self._customwrap, names))[i],
                                 showarrow=True,
                                 arrowhead=0)
 
