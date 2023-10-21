@@ -17,6 +17,16 @@ import textwrap
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+from sklearn.manifold import MDS
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from adjustText import adjust_text
+import textwrap
+
+import plotly.express as px
+import plotly.io as pio
+
+
 from .utils import is_jupyter_notebook, format_ytick_label
 
 class EnrichmentAnalysis:
@@ -34,7 +44,8 @@ class EnrichmentAnalysis:
             self.godag = godag
             self.termcounts = termcounts
 
-    def array_enrichment_analysis(self, gene_list, organism, sematic_sim_filter=True):
+    def array_enrichment_analysis(self, gene_list, organism,
+                                  sematic_sim_filter=True):
 
         """
         Perform GO term enrichment
@@ -606,4 +617,318 @@ class EnrichmentAnalysis:
                 plt.title('Downregulated proteins')
             if savefig == True:
                 plt.savefig(f'{idx}_circle_plot.pdf', bbox_inches='tight')
-    
+
+
+    def filter_go_data(self, go_data, godag):
+
+        '''
+        Filter the go_data by the go terms in the godag
+
+        Parameters
+        ----------
+        go_data : pandas.DataFrame
+            Dataframe with go term data
+        godag: goatools.obo_parser.GODag
+            GODag object
+
+        Returns
+        -------
+        go_data : pandas.DataFrame
+            Filtered dataframe with go term data
+        '''
+
+        return go_data[go_data['GO term ID'].isin(godag.keys())]
+
+    def calculate_semantic_similarity_between_go_terms(self, go_data, godag, termcounts):
+        
+        '''
+        Calculate the semantic similarity between given go terms
+
+        Parameters
+        ----------
+        go_data : pandas.DataFrame
+            Dataframe with go term data
+        godag: goatools.obo_parser.GODag
+            GODag object
+        termcounts: goatools.semantic.TermCounts
+            TermCounts object
+
+        Returns
+        -------
+        sem_sims : numpy.ndarray
+            Array with semantic similarity data
+        '''
+
+        go_data = self.filter_go_data(go_data, godag)
+        go_termids = go_data['GO term ID'].tolist()
+
+        sem_sims = np.zeros((len(go_termids), len(go_termids)))
+        for ax1, i in enumerate(go_termids):
+            for ax2, j in enumerate(go_termids):
+                sem_sims[ax1, ax2] = lin_sim(i, j, godag, termcounts)
+
+        return sem_sims
+
+    def perform_mds(self, sem_sims):
+
+        '''
+        Perform mutlidimensional scaling
+
+        Parameters
+        ----------
+        sem_sims : numpy.ndarray
+            Array with semantic similarity data
+        
+        Returns
+        -------
+        X_transformed : numpy.ndarray
+            Array with MDS scores
+        '''
+        
+        np.random.seed(42)
+        embedding = MDS(n_components=2,
+                        normalized_stress='auto', 
+                        dissimilarity='euclidean')
+
+        X_transformed = embedding.fit_transform(np.nan_to_num(sem_sims, 0))
+
+        return X_transformed
+
+    def cluster_mds_scores(self, x, n_clusters=25):
+        
+        '''
+        Cluster the MDS scores
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            Array with MDS scores
+        n_clusters : int
+            Number of clusters (Default value = 25)
+
+        Returns
+        -------
+        labels : numpy.ndarray
+            Array with cluster labels
+        hue : list
+            Array with cluster labels as strings
+        '''
+
+        knn = KMeans(n_clusters=n_clusters, 
+                    n_init=10,
+                    random_state=42)
+        output = knn.fit(x)
+
+        labels = output.labels_
+        hue = [str(i) for i in labels] 
+
+        return labels, hue
+
+    def calculate_deepest_common_ancestor(self, go_data, labels, godag, ):
+
+        '''
+        Calculate the deepest common ancestor for each cluster
+
+        Parameters
+        ----------
+        go_data : pandas.DataFrame
+            Dataframe with go term data
+        labels : numpy.ndarray or list
+            Array with cluster labels
+        godag: goatools.obo_parser.GODag
+            GODag object
+
+        Returns
+        -------
+        deepest_common_ancestors : list
+            List with deepest common ancestors
+        '''
+
+        deepest_common_ancestors = []
+        for i in range(len(np.unique(labels))):
+            id_cluster = go_data[labels == i]['GO term ID'].tolist()
+            go_root = deepest_common_ancestor(id_cluster, godag)
+            dca = godag[go_root].name
+            deepest_common_ancestors.append(dca)
+        return deepest_common_ancestors
+
+    def calculate_center(self, x, labels):
+        
+        '''
+        Calculate the center of each cluster for plotting
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            Array with MDS scores
+
+        labels : numpy.ndarray or list
+            Array with cluster labels
+        
+        Returns
+        -------
+        center : list
+            List with cluster centers
+        '''
+        
+        center = []
+        for i in range(len(np.unique(labels))):
+            x_cluster = x[labels == i]
+            center.append(np.mean(x_cluster, axis=0))
+        return center
+
+    def customwrap(self, s, width=15):
+
+        '''
+        Wrap string with <br> tag
+
+        Parameters
+        ----------
+        s : str
+            String to be wrapped
+        width : int
+            Width of the string (Default value = 15)
+        '''
+
+        return "<br>".join(textwrap.wrap(s, width=width))
+
+    def plot_enrichment_mds(self, x, hue, names, centers, pvalues, title=None,
+                            figsize=(8,8), savefig=True,
+                            dir='enrichment_mds.pdf'):
+        
+        '''
+        Plot the enrichment MDS scores
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            Array with MDS scores
+        hue : numpy.ndarray or list
+            Array with cluster labels
+        names : list
+            List with cluster names
+        centers : list
+            List with cluster centers
+        pvalues : numpy.ndarray or list
+            Array with pvalues
+        title : str
+            Title of the plot (Default value = None)
+        figsize : tuple
+            Figure size (Default value = (8,8))
+        savefig : bool
+            If True save figure (Default value = True)
+        dir : str
+            Directory to save the figure (Default value = 'enrichment_mds.pdf')
+        
+        Returns
+        -------
+        matplotlib.pyplot.figure
+        '''
+
+        plt.figure(figsize=figsize)
+        sns.scatterplot(x=x[:,0],
+                        y=x[:,1], 
+                        hue=hue,
+                        size=pvalues,
+                        sizes=(50, 200),
+                        )
+        plt.xlabel('MDS1')
+        plt.ylabel('MDS2')
+        plt.legend().set_visible(False)
+        texts = [plt.text(center[0], center[1], names[idx], ha='center', va='center', fontsize=9)
+                for idx, center in enumerate(centers)]    
+        adjust_text(texts, arrowprops = dict(arrowstyle = '-', color = 'black'))
+
+        if savefig == True:
+            plt.savefig(dir, bbox_inches='tight')
+        plt.title(title)
+        plt.show()
+
+    def create_plotly_data(self, x, hue, go_data):
+
+        '''
+        Create the data for the interactive plots based on the MDS scores
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            Array with MDS scores
+        hue : numpy.ndarray or list
+            Array with cluster labels
+        go_data : pandas.DataFrame
+            Dataframe with go term data
+
+        Returns
+        -------
+        data : pandas.DataFrame
+            Dataframe with MDS scores, cluster labels, go terms and pvalues
+        '''
+
+        data = pd.DataFrame(x, columns=['MDS1', 'MDS2'])
+        data['hue'] = hue
+        data['Term'] = go_data['Term'].tolist()
+        data['Adjusted P-value'] = go_data['Adjusted P-value'].tolist()
+
+        return data
+
+    def plot_interactive_enrichment_mds(self, data, labels, centers, names,
+                                        title=None, figsize=(700, 700),
+                                        save=False, dir='int_enrichment.html'):
+        
+        '''
+        Plot the interactive enrichment MDS scores
+
+        Parameters
+        ----------
+        data : pandas.DataFrame
+            Dataframe with MDS scores, cluster labels, go terms and pvalues
+        labels : numpy.ndarray or list
+            Array with cluster labels
+        centers : list
+            List with cluster centers
+        names : list
+            List with cluster names
+        title : str
+            Title of the plot (Default value = None)
+        figsize : tuple
+            Figure size (Default value = (700,700))
+        save : bool
+            If True save figure (Default value = False)
+        dir : str
+            Directory to save the figure (Default value = 'int_enrichment.html')
+        
+        Returns
+        -------
+        plotly figure
+        '''
+        fig = px.scatter(data,
+                        x='MDS1',
+                        y='MDS2',
+                        color='hue',
+                        size='Adjusted P-value',
+                        hover_data={'Term': True,
+                                    'MDS1': False, # hide
+                                    'MDS2': False, # hide
+                                    'hue':False, # hide
+                                    'Adjusted P-value':False}, # hide
+                        color_discrete_sequence=px.colors.qualitative.Vivid,
+                        title=title)
+
+        fig.update_layout(template='simple_white',
+                                height=figsize[0],
+                                width=figsize[1],
+                                showlegend=False)
+
+        for i in range(len(np.unique(labels))):
+            fig.add_annotation(x=centers[i][0],
+                                y=centers[i][1],
+                                text=list(map(self.customwrap, names))[i],
+                                showarrow=True,
+                                arrowhead=0)
+
+        if save == True:
+            # Save the plot as an HTML file
+            pio.write_html(fig, f'{dir}')
+
+        fig.show()
+        

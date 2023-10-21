@@ -8,7 +8,9 @@ from proteomics_downstream_analysis.stats import Statistics
 from proteomics_downstream_analysis.visualizer import Visualizer
 from proteomics_downstream_analysis.dataqualityinformation import DataQualityInformation
 
-class DiannData(MultiLevelData, DimensionalityReduction, ContaminationAnalysis, Statistics, Visualizer, DataQualityInformation):
+class DiannData(MultiLevelData, DimensionalityReduction,
+                ContaminationAnalysis, Statistics, Visualizer,
+                DataQualityInformation):
     
     """
     This class encapsulates methods for DIANN output tables
