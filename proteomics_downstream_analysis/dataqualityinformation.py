@@ -14,63 +14,6 @@ class DataQualityInformation:
     def __init__(self):
         pass
 
-    def _missing_vals_lineplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
-        
-        """
-        Plot the number of missing values per column as a lineplot
-
-        Parameters
-        ----------
-        n_rows : int
-            Number of rows in the subplot
-             (Default value = 1)
-
-        n_cols : int
-            Number of columns in the subplot
-             (Default value = 1)
-        
-        titles : list
-            List of titles for each subplot
-             (Default value = [''])
-
-        figsize : tuple
-            Figure size
-             (Default value = (10, 5) 
-            
-        savefig : bool
-            Save figure
-             (Default value = False)
-
-        Returns
-        -------
-        seaborn.lineplot
-        """
-    
-        # Create a single dataset list and a single title list when no subplots required
-        if n_rows == 1 and n_cols == 1:
-            datasets_new_cols = [self.data.select_dtypes('float')]
-            datasets_new_cols[0].columns = [str(i) for i in np.arange(datasets_new_cols[0].shape[1])]
-
-        else:
-            datasets_new_cols = []
-            for data in self.datasets:
-                new_dataset = data.select_dtypes('float')
-                new_dataset.columns = [str(i) for i in np.arange(new_dataset.shape[1])]
-                datasets_new_cols.append(new_dataset)
-
-        # Plot the na values
-        fig, ax = plt.subplots(n_rows, n_cols, figsize=figsize)
-        for data, axes, name in zip(datasets_new_cols, np.array(ax).flatten(), titles):
-            sns.lineplot(y=data.isna().sum().values, x=data.isna().sum().index, ax=axes, marker='o')
-            axes.set(ylabel='missing values')
-            axes.set_title(name)
-            sns.despine()
-        fig.tight_layout()
-        
-        if savefig == True:
-            fig.savefig('missing_values_lineplot.pdf', bbox_inches='tight', transparent=True)
-
-
     def _missing_vals_heatmap(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
 
         """
@@ -104,7 +47,7 @@ class DataQualityInformation:
         """
         
         # Create a single dataset list and a single title list when no subplots
-        if n_rows ==1 and n_cols == 1:
+        if (n_rows ==1) and (n_cols == 1):
             datasets = [self.data.select_dtypes(float)]
 
         else:
@@ -176,7 +119,7 @@ class DataQualityInformation:
             mean_na_data['variable'] = [textwrap.fill(i, wrap) for i in mean_na_data['variable']]
             
             # Use the provided palette if available; otherwise, use Seaborn default color
-            sns.barplot(data=mean_na_data, x='variable', y='value', ax=axes, errorbar='sd', capsize=.3, errwidth=1.5)
+            sns.barplot(data=mean_na_data, x='variable', y='value', ax=axes, errorbar='sd', capsize=.3, err_kws={'linewidth': 1.5})
             axes.set(ylabel='# missing values', xlabel='')
             axes.set_title(title)
             sns.despine()
@@ -424,7 +367,7 @@ class DataQualityInformation:
         seaborn.barplot
         """
         
-        if n_rows == 1 and n_cols == 1:
+        if (n_rows == 1) and (n_cols == 1):
             datasets = [self.data]
         
         else:
@@ -444,8 +387,7 @@ class DataQualityInformation:
                           ax=axes)
 
             sns.violinplot(y=id_data.values,
-                           x=id_data.index, 
-                           palette=sns.color_palette("Set2"),
+                           x=id_data.index,
                            ax=axes)
 
             axes.set(ylabel='# identifications')
@@ -485,7 +427,6 @@ class DataQualityInformation:
 
         """
         # show missing values
-        self._missing_vals_lineplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
         self._missing_vals_heatmap(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
         self._missing_vals_barplot(n_rows=n_rows, n_cols=n_cols, titles=titles, figsize=figsize, savefig=savefig)
 

@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
-import umap.umap_ as mp
+# import umap.umap_ as mp
 
 from adjustText import adjust_text
 

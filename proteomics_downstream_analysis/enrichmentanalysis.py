@@ -18,10 +18,8 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from sklearn.manifold import MDS
-from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from adjustText import adjust_text
-import textwrap
 
 import plotly.express as px
 import plotly.io as pio
@@ -53,15 +51,18 @@ class EnrichmentAnalysis:
         Parameters
         ----------
         gene_list : list
-            A list of genes to be used for enrichment analysis
+            A list of genes to be used
+            for enrichment analysis
 
         organism : str
-            Organism to be used to do enrichment analysis. e.g 'human' or 'mouse'
+            Organism to be used to do enrichment
+            analysis. e.g 'human' or 'mouse'
         
         Returns
         -------
         enr_data_filt : list
-            List of dataframes with GO_Biological_Process_2021, GO_Molecular_Function_2021
+            List of dataframes with GO_Biological_Process_2021,
+            GO_Molecular_Function_2021
             GO_Cellular_Component_2021 enrichment data.
         """
         term = ['GO_Biological_Process_2021',
@@ -173,7 +174,9 @@ class EnrichmentAnalysis:
     def int_plot_array_enrichment(self, go_data, height=700, width=1500, top=100):
 
         n_cols = 3
-        titles = ['Biological Process', 'Cellular Component', 'Molecular Function']
+        titles = ['Biological Process',
+                  'Cellular Component',
+                  'Molecular Function']
         fig = make_subplots(1, 3, horizontal_spacing = 0.2, subplot_titles=titles)
 
         cmin = np.min(pd.concat(go_data)['Combined Score'])
@@ -236,13 +239,15 @@ class EnrichmentAnalysis:
             A list of genes to be used for enrichment analysis
             
         organism : str
-            Organism to be used to do enrichment analysis. e.g 'human' or 'mouse'
+            Organism to be used to do enrichment
+            analysis. e.g 'human' or 'mouse'
 
         figsize : tuple
             Figure size e.g (10, 10)
         
         top : int
-            Top n terms to be plotted based on the combined score
+            Top n terms to be plotted
+            based on the combined score
 
         savefig : boolean
              If True save figure (Default value = False)
@@ -283,7 +288,8 @@ class EnrichmentAnalysis:
             List of downregulated genes
             
         organism : str
-            Organism to be used to do enrichment analysis. e.g 'human' or 'mouse'
+            Organism to be used to do enrichment
+            analysis. e.g 'human' or 'mouse'
 
         go_term : int
              0 represents Biological process,
@@ -921,7 +927,8 @@ class EnrichmentAnalysis:
         save : bool
             If True save figure (Default value = False)
         dir : str
-            Directory to save the figure (Default value = 'int_enrichment.html')
+            Directory to save the figure
+            (Default value = 'int_enrichment.html')
         
         Returns
         -------
