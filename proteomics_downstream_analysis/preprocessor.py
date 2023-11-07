@@ -10,7 +10,9 @@ class Preprocessor:
         self.data = None
         self._preprocessing = Preprocessing()
     
-    def _process(self, data):
+    def _process(self, data, axis=0,
+                  shift=1.8, width=0.3,
+                  seed=42):
                 
         # change the datatypes
         data = self._preprocessing._change_datatypes(data)
@@ -25,11 +27,13 @@ class Preprocessor:
         data = self._preprocessing._impute_genes_with_protein_ids(data)
         
         # impute data based on normal distribution
-        data = self._preprocessing._impute_based_on_gaussian(data)
+        data = self._preprocessing._normal_imputation(data, axis, shift, width, seed)
                 
         return data
     
-    def _hybrid_process(self, data, completeness, percentage, strategy, kind, constant=None):
+    def _hybrid_process(self, data, completeness=0.8, percentage=0.95,
+                        strategy='mean', kind='knn', constant=None,
+                        axis=0, shift=1.8, width=0.3, seed=42):
         
         # change the datatypes
         data = self._preprocessing._change_datatypes(data)
@@ -53,7 +57,7 @@ class Preprocessor:
         data = self._preprocessing._impute(data, kind, strategy, percentage, constant)
 
         # impute data based on systematic missingness (gaussian distribution)
-        data = self._preprocessing._impute_based_on_gaussian(data)
+        data = self._preprocessing._normal_imputation(data, axis, shift, width, seed)
 
         return data
 

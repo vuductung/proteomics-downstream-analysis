@@ -7,9 +7,7 @@ import pingouin as pg
 
 from tqdm import tqdm
 
-from proteomics_downstream_analysis.parallelprocessing import ParallelProcessing
-
-class Statistics(ParallelProcessing):
+class Statistics():
 
     """
     Methods for statistical analysis of proteomics data.
@@ -91,28 +89,32 @@ class Statistics(ParallelProcessing):
 
         return pv_data, qv_data, results
 
-    def two_tailed_ancova(self, dataset, cov_data, groups, sample_col, cov):
-        
-        results = self.paralell_processing(dataset, self.perform_two_tailed_ancova, cov_data, groups, sample_col, cov)
+    def two_tailed_ancova(self, datasets, cov_data, groups, sample_col, cov):
 
-        # data preparation
-        pv_data = pd.concat([result[0] for result in results], axis=0).reset_index()
-        qv_data = pd.concat([result[1] for result in results], axis=0).reset_index()
-        res = []
-        
-        for idx in range(len(groups)):
-                res.append(pd.concat([result[2][idx] for result in results], axis=0).reset_index(drop=True))
+        return self.perform_two_tailed_ancova(datasets, cov_data, groups, sample_col, cov)
 
-        return pv_data, qv_data, res
+    # def two_tailed_ancova(self, dataset, cov_data, groups, sample_col, cov):
         
-    def ancova(self, datasets, cov_data, covariates):
-        
-        results = self.paralell_processing(datasets, self.perform_ancova, cov_data, covariates)
-        
-        results = pd.concat(results, axis=0).reset_index(drop=True)
+    #     results = self.paralell_processing(dataset, self.perform_two_tailed_ancova, cov_data, groups, sample_col, cov)
 
-        return results
+    #     # data preparation
+    #     pv_data = pd.concat([result[0] for result in results], axis=0).reset_index()
+    #     qv_data = pd.concat([result[1] for result in results], axis=0).reset_index()
+    #     res = []
         
+    #     for idx in range(len(groups)):
+    #             res.append(pd.concat([result[2][idx] for result in results], axis=0).reset_index(drop=True))
+
+    #     return pv_data, qv_data, res
+        
+    # def ancova(self, datasets, cov_data, covariates):
+        
+    #     results = self.paralell_processing(datasets, self.perform_ancova, cov_data, covariates)
+        
+    #     results = pd.concat(results, axis=0).reset_index(drop=True)
+
+    #     return results
+
     def anova(self):
         
         f_stat_data = pd.DataFrame()

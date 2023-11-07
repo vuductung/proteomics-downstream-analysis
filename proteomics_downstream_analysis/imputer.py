@@ -2,6 +2,7 @@ from numpy.random import rand
 from sklearn.impute import SimpleImputer, KNNImputer
 import numpy as np
 import pandas as pd
+from proteomics_downstream_analysis.utils import float_string_split
 
 class Imputer:
 
@@ -108,3 +109,69 @@ class Imputer:
         data = imp_data.copy()
         
         return data
+    
+    def _normal_imputation(self, data, axis=0, shift=1.8, width=0.3, seed=42):
+
+        """
+        This function imputes missing values in a dataset using a Gaussian distribution.
+        The missing values are imputed by random sampling values from a Gaussian distribution with a mean
+        of 1.8 standard deviations below the computed mean and a width of 0.3 times the computed standard deviation.
+        The function returns a copy of the imputed dataset with the missing values replaced.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            data to be imputed
+        
+        axis : int
+            axis along which to impute data
+            0 : impute along rows
+            1 : impute along columns
+
+        shift : float
+            number of standard deviations below
+            the mean to shift the distribution
+        
+        width : float
+            width of the distribution as a
+            fraction of the standard deviation
+
+        seed : int
+            seed for reproducibility
+
+        Returns
+        -------
+        data : pd.DataFrame
+            data with imputed values
+        """
+
+        # split data
+        float_data, string_data = float_string_split(data)
+
+        # impute data
+        nan_max = float_data.isnull().sum(axis=axis).max()
+        means = float_data.mean(axis=axis).values
+        stds = float_data.std(axis=axis).values
+
+        # set a seed or reproducibility
+        np.random.seed(seed)
+
+        samples = np.random.normal(loc=means-shift*stds,
+                                scale=width*stds,
+                                size=(float_data.shape[axis],
+                                    float_data.shape[abs(axis-1)]))
+
+        vals = float_data.values
+        mask = np.isnan(vals)
+        if axis == 0:
+            vals[mask] = samples[mask]
+
+        elif axis == 1:
+            vals[mask] = samples.T[mask]
+
+        # create new imputed data
+        new_data = pd.DataFrame(vals)
+        new_data.columns = float_data.columns
+        new_data = pd.concat([string_data, new_data], axis=1)
+        
+        return new_data

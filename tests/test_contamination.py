@@ -40,6 +40,7 @@ class TestContamination(unittest.TestCase):
                                     'j' : np.array([412, 231, 234, 5, 1, 3, 4]),
                                     }
                         )
+
         self.data2.columns = ['Genes','a', 'a','a', 'a','a', 'a','a', 'a']
         self.data2['a'] = self.data2['a'].astype(float)
         self.data2['Genes'] = self.data2['Genes'].astype('string')
@@ -76,7 +77,7 @@ class TestContamination(unittest.TestCase):
          
         output = self.helper.outlier(self.data3, 'missing values')
 
-        self.assertTrue(output == np.array([2]))
+        self.assertTrue(output[0] == np.array([1]))
 
     def test_contamination_removal(self):
              
@@ -88,7 +89,7 @@ class TestContamination(unittest.TestCase):
          
         output = self.helper.outlier(self.data2, 'contamination', False, self.panel)
 
-        self.assertTrue(output == np.array([8]))
+        self.assertTrue(output[0] == np.array([7]))
         
     def test_outlier_zscore_removal(self):
          
@@ -100,7 +101,7 @@ class TestContamination(unittest.TestCase):
         
         output = self.helper.outlier(self.data)
 
-        self.assertTrue(output == np.array([4]))
+        self.assertTrue(output[0] == np.array([3]))
 
     def test_count_missing_values(self):
          

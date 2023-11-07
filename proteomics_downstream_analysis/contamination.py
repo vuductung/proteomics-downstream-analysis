@@ -62,7 +62,7 @@ class ContaminationAnalysis():
 
         return mask
 
-    def outlier_plot(self, data, plot='bar', kind='zscore', panel=None, type='RBC'):
+    def outlier_plot(self, data, plot='bar', kind='zscore', panel=None, contam_type='RBC'):
 
         groups = data.select_dtypes(float).columns.unique()
         len_groups = len(groups)
@@ -74,7 +74,7 @@ class ContaminationAnalysis():
 
         elif kind == 'contamination':
             
-            output = [self.compute_contamination_outlier(data[['Genes',i]], panel, type)[:2] for i in groups]
+            output = [self.compute_contamination_outlier(data[['Genes',i]], panel, contam_type)[:2] for i in groups]
 
         elif kind == 'missing values':
 
@@ -159,24 +159,24 @@ class ContaminationAnalysis():
         else:
             return np.where(master_mask)[0] + number_of_string_cols
         
-    def compute_rbc_total_ratio(self, data, panel, type='RBC'):
+    def compute_rbc_total_ratio(self, data, panel, contam_type='RBC'):
 
         # calculat the RBC to total protein ratio
         total = data.sum(axis=0, numeric_only=True)
-        contam = panel[panel['Type'] == type]['Gene names'].tolist()
+        contam = panel[panel['Type'] == contam_type]['Gene names'].tolist()
         rbc_sum = data[data['Genes'].isin(contam)].sum(axis=0,
                                                 numeric_only=True)
         rbc_total_ratio = rbc_sum/total
 
         return rbc_total_ratio.values
     
-    def compute_contamination_outlier(self, data, panel, type='RBC'):
+    def compute_contamination_outlier(self, data, panel, contam_type='RBC'):
             
             # sort data
             data = self.sort_by_column_names(data)
 
             # calculate rbc to total protein ratio
-            rbc_total_ratio = self.compute_rbc_total_ratio(data, panel, type)
+            rbc_total_ratio = self.compute_rbc_total_ratio(data, panel, contam_type)
 
             # get the upper limit (boxplot)
             upper_lim = self.upper_limit(rbc_total_ratio)
@@ -186,17 +186,17 @@ class ContaminationAnalysis():
 
             return rbc_total_ratio, upper_lim, mask 
     
-    def contamination_outlier(self, data, panel, type='RBC', remove=False, experimental=True):
+    def contamination_outlier(self, data, panel, contam_type='RBC', remove=False, experimental=True):
 
         # compute contamination outliers
         if experimental == True:
             master_mask = np.array([], dtype=bool)  
             for i in data.select_dtypes(float).columns.unique():
-                _, _, mask = self.compute_contamination_outlier(data[['Genes', i]], panel, type)
+                _, _, mask = self.compute_contamination_outlier(data[['Genes', i]], panel, contam_type)
                 master_mask = np.concatenate((master_mask, mask))
 
         else:
-            _, _, master_mask = self.compute_contamination_outlier(data, panel, type)
+            _, _, master_mask = self.compute_contamination_outlier(data, panel, contam_type)
 
         # get number of string cols to correct the inliers/outliers index
         number_of_string_cols = len(data.select_dtypes('string').columns)
@@ -303,7 +303,7 @@ class ContaminationAnalysis():
             
             fig.tight_layout()
 
-    def outlier(self, data, kind='zscore', remove=False, panel=None, type='RBC'):
+    def outlier(self, data, kind='zscore', remove=False, panel=None, contam_type='RBC'):
 
         '''
         docstring
@@ -359,7 +359,7 @@ class ContaminationAnalysis():
                 master_mask = np.concatenate((master_mask, mask))
 
             elif kind == 'contamination':
-                _, _, mask = self.compute_contamination_outlier(data[['Genes', i]], panel, type)
+                _, _, mask = self.compute_contamination_outlier(data[['Genes', i]], panel, contam_type)
                 master_mask = np.concatenate((master_mask, mask))
 
             elif kind == 'missing values':

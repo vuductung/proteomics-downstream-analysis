@@ -8,7 +8,7 @@ from proteomics_downstream_analysis.stats import Statistics
 from proteomics_downstream_analysis.visualizer import Visualizer
 from proteomics_downstream_analysis.dataqualityinformation import DataQualityInformation
 
-class DiannData(MultiLevelData, DimensionalityReduction,
+class Analysis(MultiLevelData, DimensionalityReduction,
                 ContaminationAnalysis, Statistics, Visualizer,
                 DataQualityInformation):
     
@@ -68,6 +68,7 @@ class DiannData(MultiLevelData, DimensionalityReduction,
         self.data.columns = self.data.select_dtypes('string').columns.tolist() + col_names
     
     def drop_col(self, col_name):
+
         """
         Drop columns from DIANN output tables
         Parameters
@@ -84,26 +85,23 @@ class DiannData(MultiLevelData, DimensionalityReduction,
 
         return self.data
     
-    def preprocessing(self, method='simple', completeness=0.5, percentage=0.9, strategy='mean', kind='knn', constant=None):
+    def preprocessing(self, method, **kwargs):
         
         """
         Prepocess data
         """
         
         if method == 'simple':
-
             self.data = self._Preprocessor._process(self.data)
 
-        if method == 'hybrid':
-            self.data = self._Preprocessor._hybrid_process(self.data,
-                                                         completeness,
-                                                         percentage,
-                                                         strategy,
-                                                         kind,
-                                                         constant=constant)
-        if method == 'no imputation':
-            self.data = self._Preprocessor._simple_process(self.data,
-                                                           completeness)
+        elif method == 'hybrid':
+            self.data = self._Preprocessor._hybrid_process(self.data, **kwargs)
+
+        elif method == 'no imputation':
+            self.data = self._Preprocessor._simple_process(self.data, **kwargs)
+
+        else:
+            raise ValueError(f"Unknown preprocessing method: {method}")
 
     def change_dtypes(self):
 

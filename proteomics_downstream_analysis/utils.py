@@ -18,3 +18,7 @@ def format_ytick_label(ytick):
             
     res += line.strip()
     return res
+
+def float_string_split(data):
+    return data.select_dtypes(float), data.select_dtypes('string')
+
