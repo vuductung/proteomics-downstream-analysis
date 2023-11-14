@@ -216,8 +216,9 @@ class Analysis(MultiLevelData, DimensionalityReduction,
             Filtered DIANN output table
         """
         if axis == 0:
-            self.data = self.data[self.data[col_name].isin(value)]
+            data = self.data[self.data[col_name].isin(value)]
 
         elif axis == 1:
-            self.data = self.data[col_name]
-        return self.data
+            data = self.data[col_name]
+            
+        return data

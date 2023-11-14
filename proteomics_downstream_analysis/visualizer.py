@@ -20,8 +20,9 @@ class Visualizer:
     def __init__(self):
         pass
 
-    def volcano_plot(self, n_rows, n_cols, gene_list=None, figsize = (8,8), savefig = False, upper_fc_cutoff = 1, lower_fc_cutoff = 1,
-                 annot = None, gene_column = 'Genes', qvalue=True):
+    def volcano_plot(self, n_rows, n_cols, gene_list=None, figsize = (8,8),
+                     savefig = False, upper_fc_cutoff = 1, lower_fc_cutoff = 1,
+                     annot = None, gene_column = 'Genes', qvalue=True):
     
         """Plot a volcano plot.
 
