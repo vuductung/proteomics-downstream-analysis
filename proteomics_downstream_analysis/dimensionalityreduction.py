@@ -92,7 +92,7 @@ class DimensionalityReduction:
           self.loading_data = loading_data
 
 
-     def principal_component_distplot(self, pc=1, bins=20):
+     def principal_component_distplot(self, pc=1, bins=20, savefig=False):
 
           _, pca_data = self._pca()
           if pc ==1:
@@ -102,6 +102,9 @@ class DimensionalityReduction:
                               kde=True,
                               bins=bins)
                sns.despine()
+
+               if savefig == True:
+                    plt.savefig('pc_distplot.pdf', bbox_inches='tight')
                plt.show()
 
           else:
@@ -111,6 +114,8 @@ class DimensionalityReduction:
                               kde=True,
                               bins=bins)
                sns.despine()
+               if savefig == True:
+                    plt.savefig('pc_distplot.pdf', bbox_inches='tight')
                plt.show()
 
 
