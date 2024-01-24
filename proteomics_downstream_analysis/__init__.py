@@ -6,3 +6,4 @@ from .analysis import *
 from .contamination import *
 from .multileveldata import *
 from .imputer import *
+from .intersection import *

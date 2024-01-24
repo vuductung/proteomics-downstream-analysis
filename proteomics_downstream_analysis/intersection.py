@@ -14,7 +14,7 @@ class Intersection():
         
         fig = plt.figure(figsize=figsize)
 
-        upset_data = self.create_upset_data(self.sets, self.set_names)
+        upset_data = self.create_upset_data()
         
         upset_data = upset_data.groupby(self.set_names).size()
 
@@ -37,7 +37,7 @@ class Intersection():
         
         # create upset_data
         all_elems = list(set().union(*self.sets))
-        upset_data = self.create_upset_data(self.sets, self.set_names)
+        upset_data = self.create_upset_data()
         upset_data['Genes'] = all_elems
 
         upset_data_series = [upset_data[i] for i in upset_data.select_dtypes('bool').columns]
