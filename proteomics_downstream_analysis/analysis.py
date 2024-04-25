@@ -85,20 +85,20 @@ class Analysis(MultiLevelData, DimensionalityReduction,
 
         return self.data
     
-    def preprocessing(self, method, **kwargs):
+    def preprocessing(self, data, method, **kwargs):
         
         """
         Prepocess data
         """
         
         if method == 'simple':
-            self.data = self._Preprocessor._process(self.data)
+            return self._Preprocessor._process(data)
 
         elif method == 'hybrid':
-            self.data = self._Preprocessor._hybrid_process(self.data, **kwargs)
+            return self._Preprocessor._hybrid_process(data, **kwargs)
 
         elif method == 'no imputation':
-            self.data = self._Preprocessor._simple_process(self.data, **kwargs)
+            return self._Preprocessor._simple_process(data, **kwargs)
 
         else:
             raise ValueError(f"Unknown preprocessing method: {method}")
