@@ -24,6 +24,11 @@ class DimensionalityReduction:
      Class with Dimensionality Reduction methods
      """
 
+     def __init__(self):
+
+          self.loading_data = None
+          self.sqrt_eigenvalues = None
+
      def _pca(self, data=None):
 
           """
@@ -61,14 +66,11 @@ class DimensionalityReduction:
           # Separating out the features
           x = df.loc[:, features].values
 
-          # Separating out the target
-          y = df.loc[:,['target']].values
-
           # Standardizing the features
           x = StandardScaler().fit_transform(x)
-          pca = PCA(n_components=2)
+          pca = PCA()
           principalComponents = pca.fit_transform(x)
-          principalDf = pd.DataFrame(data = principalComponents
+          principalDf = pd.DataFrame(data = principalComponents[:, :2]
                                    ,columns = ['principal component 1', 'principal component 2'])
 
           finalDf = pd.concat([principalDf, df[['target']]], axis = 1)
@@ -79,9 +81,9 @@ class DimensionalityReduction:
 
           # calculate loading
           components_transp = self._pca()[0].components_.T
-          sqrt_eigenvalues = np.sqrt(self._pca()[0].explained_variance_)
+          self.sqrt_eigenvalues = np.sqrt(self._pca()[0].explained_variance_)
 
-          loading_data = pd.DataFrame(components_transp * sqrt_eigenvalues)
+          loading_data = pd.DataFrame(components_transp * self.sqrt_eigenvalues)
           loading_data['Genes'] = self.data['Genes']
 
           # renname cols
@@ -90,6 +92,8 @@ class DimensionalityReduction:
           loading_data = loading_data.rename(columns=rename)
 
           self.loading_data = loading_data
+
+          return loading_data
 
 
      def principal_component_distplot(self, pc=1, bins=20, savefig=False):
