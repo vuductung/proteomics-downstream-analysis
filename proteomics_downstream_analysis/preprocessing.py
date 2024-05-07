@@ -3,6 +3,23 @@ import pandas as pd
 from sklearn.impute import SimpleImputer, KNNImputer
 from proteomics_downstream_analysis.utils import float_string_split
 
+def log2(x):
+    try:
+        x = np.log2(x)
+        if type(x) == str:
+            return x
+        else:
+            return x
+    except:
+        return x
+    
+def get_log2(data):
+    
+    # apply log2 to all columns of a dataframe
+    data = data.apply(log2)
+    
+    return data
+
 class Preprocessing:
     
     """This class encapsulates preprocessing steps"""
