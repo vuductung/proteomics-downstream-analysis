@@ -67,7 +67,7 @@ class Analysis(MultiLevelData, DimensionalityReduction,
 
         self.data.columns = self.data.select_dtypes('string').columns.tolist() + col_names
     
-    def drop_col(self, col_name):
+    def drop_col(self, data, col_name):
 
         """
         Drop columns from DIANN output tables
@@ -81,7 +81,7 @@ class Analysis(MultiLevelData, DimensionalityReduction,
         self.data : pandas.DataFrame
             Updated DIANN output table with dropped column
         """
-        self.data = self.data.drop(col_name, axis=1)
+        self.data = data.drop(col_name, axis=1)
 
         return self.data
     
@@ -103,12 +103,14 @@ class Analysis(MultiLevelData, DimensionalityReduction,
         else:
             raise ValueError(f"Unknown preprocessing method: {method}")
 
-    def change_dtypes(self):
+    def change_dtypes(self, data):
 
         """ 
         Change data types of columns
         """
-        self.data = self._Preprocessor._change_dtypes(self.data)
+        self.data = self._Preprocessor._change_dtypes(data)
+
+        return self.data
 
     def add_data(self, data, title):
 
@@ -179,19 +181,21 @@ class Analysis(MultiLevelData, DimensionalityReduction,
         data = data.replace('Filtered', np.nan)
         self.data = data
 
-    def reorder_columns(self):
+    def reorder_columns(self, data):
 
         # reorder the columns (string first, float last)
-        float_cols = self.data.select_dtypes(float).columns.to_list()
-        string_cols = self.data.select_dtypes('string').columns.to_list()
+        float_cols = data.select_dtypes(float).columns.to_list()
+        string_cols = data.select_dtypes('string').columns.to_list()
 
-        self.data = self.data[string_cols + float_cols]
+        self.data = data[string_cols + float_cols]
 
-    def synchronize_data_and_annotation(self, annotation, sample_id):
+        return self.data
+
+    def synchronize_data_and_annotation(self, data, annotation, sample_id):
 
         # synchronize data and annotation by a specific sample ID
 
-        sample_id_data = self.data.select_dtypes(float).columns
+        sample_id_data = data.select_dtypes(float).columns
         sample_id_annot = annotation[sample_id].tolist()
 
         intersec = list(set(sample_id_annot).intersection(set(sample_id_data)))
@@ -200,7 +204,7 @@ class Analysis(MultiLevelData, DimensionalityReduction,
 
         return annotation
     
-    def filter(self, col_name, value, axis):
+    def filter(self, data, col_name, value, axis):
 
         """
         Filter data by column names
@@ -216,9 +220,9 @@ class Analysis(MultiLevelData, DimensionalityReduction,
             Filtered DIANN output table
         """
         if axis == 0:
-            data = self.data[self.data[col_name].isin(value)]
+            data = data[data[col_name].isin(value)]
 
         elif axis == 1:
-            data = self.data[col_name]
+            data = data[col_name]
             
         return data
