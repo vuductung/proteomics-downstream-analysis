@@ -8,6 +8,7 @@ from proteomics_downstream_analysis.stats import Statistics
 from proteomics_downstream_analysis.visualizer import Visualizer
 from proteomics_downstream_analysis.dataqualityinformation import DataQualityInformation
 
+
 class Analysis(MultiLevelData, DimensionalityReduction,
                 ContaminationAnalysis, Statistics, Visualizer,
                 DataQualityInformation):
@@ -15,7 +16,6 @@ class Analysis(MultiLevelData, DimensionalityReduction,
     """
     This class encapsulates methods for DIANN output tables
     """
-    
     def __init__(self, filepath=None):
 
         self.title =[]
