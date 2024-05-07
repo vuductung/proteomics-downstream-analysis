@@ -55,7 +55,6 @@ class Visualizer:
 
         Returns
         -------
-
         
         """
         fig, ax = plt.subplots(n_rows, n_cols, figsize = figsize, layout='tight')
