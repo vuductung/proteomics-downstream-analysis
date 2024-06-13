@@ -347,3 +347,28 @@ class Visualizer:
             fig.show()
         else:
             st.plotly_chart(fig, use_container_width=True)
+
+    def scatterplot_with_annotation(self, x, y, labels=None, pval_cutoff=None, lower_coef_cutoff=None, upper_coef_cutoff=None, annotation=None):
+    
+        sns.scatterplot(x=x, y=y)
+        plt.axvline(lower_coef_cutoff, color='lightgrey', ls='--')
+        plt.axvline(upper_coef_cutoff, color='lightgrey', ls='--')
+        plt.axhline(pval_cutoff, color='lightgrey', ls='--')
+
+        plt.ylabel('-log10 p-value')
+        plt.xlabel('coefficient')
+
+        if annotation:
+            upper_mask = x > upper_coef_cutoff
+            lower_mask = x < lower_coef_cutoff
+            pval_mask = y > pval_cutoff
+            mask = (upper_mask & pval_mask) | (lower_mask & pval_mask)
+
+            x_coords = x[mask]
+            y_coords = y[mask]
+            annotation = labels[mask]
+
+            texts = [plt.text(x_coord, y_coord, annot, ha='center', va='center', fontsize=9) for x_coord, y_coord, annot in zip(x_coords, y_coords, annotation)]
+            adjust_text(texts, arrowprops = dict(arrowstyle = '-', color = 'black'))
+
+        plt.show()
