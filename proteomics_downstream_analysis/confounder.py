@@ -119,62 +119,6 @@ class Confounder:
 
         return data.replace([np.inf, -np.inf], np.nan)
     
-    def _fit_lin_model(self, X, y):
-
-        model = LinearRegression()
-        model.fit(X, y)
-
-        return model
-    
-
-    def _calculate_p_value_for_coefs(self, X,  y, predictions, model):
-
-        newX = np.append(np.ones((len(X), 1)), X, axis=1)
-        mse = (np.sum((y - predictions) ** 2)) / (len(newX) - len(newX[0]))
-
-        var_b = mse * (np.linalg.inv(np.matmul(newX.T, newX)).diagonal())
-
-        var_b = np.maximum(var_b, 0)
-        sd_b = np.sqrt(var_b)
-
-        params = np.append(model.intercept_, model.coef_)
-        ts_b = params / sd_b
-        p_values = [2 * (1 - stats.t.cdf(np.abs(i), (len(newX) - len(newX[0])))) for i in ts_b]
-
-        return p_values
-
-    def _get_beta_and_pvals(self, X, y):
-
-        model = self._fit_lin_model(X, y)
-
-        predictions = model.predict(X)
-
-        try:
-            p_values = self._calculate_p_value_for_coefs(X, y, predictions, model)
-
-        except np.linalg.LinAlgError:
-            p_values = np.full((X.shape[1] + 1, ), fill_value=np.nan)
-
-        coefs = model.coef_
-
-        return p_values, coefs
-    
-    def _check_for_min_samples_per_group(self, X, y, group):
-
-        self.mask = np.isfinite(y)
-        _, b = np.unique(X[self.mask][:, group], return_counts=True, axis=0)
-
-        return (b > 1).all()
-
-    def _replace_0_with_min(self, pvals):
-        pvals_filt = pvals[~(pvals == 0.0).any(axis=1)]
-        mins = np.nan_to_num(pvals_filt, nan=1).min(axis=0)
-
-        for col in range(pvals.shape[1]):
-            pvals[:, col] = np.where(pvals[:, col] == 0.0, mins[col], pvals[:, col])
-
-        return pvals
-
     def get_beta_and_pval_for_each_protein(self, X, y):
 
         pvals = np.zeros((y.shape[1], X.shape[1]))
@@ -202,3 +146,61 @@ class Confounder:
         pvals = self._replace_0_with_min(pvals)
 
         return pvals, coefs
+    
+    def _check_for_min_samples_per_group(self, X, y):
+
+        for group in range(X.shape[1]):
+
+            self.mask = np.isfinite(y)
+
+            _, b = np.unique(X[self.mask][:, group], return_counts=True, axis=0)
+
+        return (b > 1).all()
+    
+    def _get_beta_and_pvals(self, X, y):
+
+        model = self._fit_lin_model(X, y)
+
+        predictions = model.predict(X)
+
+        try:
+            p_values = self._calculate_p_value_for_coefs(X, y, predictions, model)
+
+        except np.linalg.LinAlgError:
+            p_values = np.full((X.shape[1] + 1, ), fill_value=np.nan)
+
+        coefs = model.coef_
+
+        return p_values, coefs
+    
+    def _fit_lin_model(self, X, y):
+
+        model = LinearRegression()
+        model.fit(X, y)
+
+        return model
+
+    def _calculate_p_value_for_coefs(self, X,  y, predictions, model):
+
+        newX = np.append(np.ones((len(X), 1)), X, axis=1)
+        mse = (np.sum((y - predictions) ** 2)) / (len(newX) - len(newX[0]))
+
+        var_b = mse * (np.linalg.inv(np.dot(newX.T, newX)).diagonal())
+
+        var_b = np.maximum(var_b, 0)
+        sd_b = np.sqrt(var_b)
+
+        params = np.append(model.intercept_, model.coef_)
+        ts_b = params / sd_b
+        p_values = [2 * (1 - stats.t.cdf(np.abs(i), (len(newX) - len(newX[0])))) for i in ts_b]
+
+        return p_values
+
+    def _replace_0_with_min(self, pvals):
+        pvals_filt = pvals[~(pvals == 0.0).any(axis=1)]
+        mins = np.nan_to_num(pvals_filt, nan=1).min(axis=0)
+
+        for col in range(pvals.shape[1]):
+            pvals[:, col] = np.where(pvals[:, col] == 0.0, mins[col], pvals[:, col])
+
+        return pvals
