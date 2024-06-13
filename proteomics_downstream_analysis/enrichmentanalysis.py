@@ -65,9 +65,10 @@ class EnrichmentAnalysis:
             GO_Molecular_Function_2021
             GO_Cellular_Component_2021 enrichment data.
         """
-        term = ['GO_Biological_Process_2021',
-                'GO_Molecular_Function_2021',
-                'GO_Cellular_Component_2021']
+        term = ['GO_Biological_Process_2023',
+                'GO_Molecular_Function_2023',
+                'GO_Cellular_Component_2023',
+                'Reactome_2022']
         
         enr = gp.enrichr(gene_list=gene_list,
                          gene_sets=term,
@@ -144,7 +145,8 @@ class EnrichmentAnalysis:
 
         titles = ['GO_Biological_Process',
                   'GO_Molecular_Function',
-                  'GO_Cellular_Component']
+                  'GO_Cellular_Component',
+                  'Reactome']
         
         fig, ax = plt.subplots(1, 3, figsize=figsize)
         
