@@ -549,3 +549,15 @@ class DataQualityInformation:
         # plot completeness and depth of data
         self.depth_dist(data, figsize, normalize)
         self.completeness_dist(data, figsize, normalize)
+
+
+    def completeness_plot(self, data):
+
+        completeness = data.select_dtypes(float).notnull().sum(axis=1).values
+        completeness_normalized = np.array(completeness) / np.max(completeness)
+        sns.ecdfplot(completeness_normalized, stat='count', complementary=True)
+        plt.axhline(len(data.dropna()), color='lightgrey', linestyle='--', label='100% completeness')
+        plt.axhline(0.5 * len(data), color='grey', linestyle='--', label='50% completeness')
+        plt.legend(loc='best')
+
+        plt.ylabel('Number of identified\nproteins')
