@@ -538,7 +538,8 @@ class DataQualityInformation:
                 x='completeness',
                 hue='groups',
                 ax =ax[1], 
-                complementary=True)
+                complementary=True,
+                stat='count')
         ax[1].axhline(y=0.5, color='lightgrey', linestyle='--')
         ax[1].axhline(y=0.8, color='lightgrey', linestyle='--')
         fig.tight_layout()
