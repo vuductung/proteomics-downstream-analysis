@@ -132,7 +132,7 @@ class ContaminationAnalysis():
 
         # compute the robust zscore to find outliers
         # within experimental group or all data
-        if experimental == True:
+        if experimental:
 
             master_mask = np.array([], dtype=bool)  
 
@@ -147,7 +147,7 @@ class ContaminationAnalysis():
         # get number of string cols to correct the inliers/outliers index
         number_of_string_cols = len(data.select_dtypes('string').columns)
 
-        if remove == True:
+        if remove:
 
             inliers = np.where(~(master_mask))[0]
             inliers = inliers + number_of_string_cols
@@ -189,7 +189,7 @@ class ContaminationAnalysis():
     def contamination_outlier(self, data, panel, contam_type='RBC', remove=False, experimental=True):
 
         # compute contamination outliers
-        if experimental == True:
+        if experimental:
             master_mask = np.array([], dtype=bool)  
             for i in data.select_dtypes(float).columns.unique():
                 _, _, mask = self.compute_contamination_outlier(data[['Genes', i]], panel, contam_type)
@@ -201,7 +201,7 @@ class ContaminationAnalysis():
         # get number of string cols to correct the inliers/outliers index
         number_of_string_cols = len(data.select_dtypes('string').columns)
 
-        if remove == True:
+        if remove:
             inliers = np.where(~(master_mask))[0]
             inliers = inliers + number_of_string_cols
             inliers = np.concatenate((np.arange(number_of_string_cols), inliers))
@@ -214,7 +214,7 @@ class ContaminationAnalysis():
     def contamination_outlier_plot(self, data, panel, experimental=True, type='RBC'):
 
         # compute the robust zscore to find outliers
-        if experimental == True:
+        if experimental:
 
             groups = data.select_dtypes(float).columns.unique()
             len_groups = len(groups)
@@ -258,7 +258,7 @@ class ContaminationAnalysis():
     
     def missing_values_outlier(self, data, experimental=True, remove=False):
 
-        if experimental == True:
+        if experimental:
             master_mask = np.array([], dtype=bool)  
             for i in data.select_dtypes(float).columns.unique():
                 _, _, mask = self.compute_missing_values_outlier(data[i])
@@ -270,7 +270,7 @@ class ContaminationAnalysis():
         # get number of string cols to correct the inliers/outliers index
         number_of_string_cols = len(data.select_dtypes('string').columns)
 
-        if remove == True:
+        if remove:
             inliers = np.where(~(master_mask))[0]
             inliers = inliers + number_of_string_cols
             inliers = np.concatenate((np.arange(number_of_string_cols), inliers))
@@ -283,7 +283,7 @@ class ContaminationAnalysis():
     def missing_values_outlier_plot(self, data, experimental):
 
         # compute the robust zscore to find outliers
-        if experimental == True:
+        if experimental:
 
             groups = data.select_dtypes(float).columns.unique()
             len_groups = len(groups)
@@ -369,7 +369,7 @@ class ContaminationAnalysis():
         # get number of string cols to correct the inliers/outliers index
         number_of_string_cols = len(data.select_dtypes('string').columns)
 
-        if remove == True:
+        if remove:
 
             inliers = np.where(~(master_mask))[0]
             inliers = inliers + number_of_string_cols
