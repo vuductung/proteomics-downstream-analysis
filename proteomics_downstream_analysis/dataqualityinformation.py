@@ -198,14 +198,9 @@ class DataQualityInformation:
         -------
         cv_data : pandas.DataFrame
             CV data
-        """
-    
-        cv_data = pd.DataFrame()
-        
-        for i in data.select_dtypes('float').columns.unique():
-            cv_data[i] = (data[i].std(axis=1)/data[i].mean(axis=1))*100
+        """        
             
-        return cv_data
+        return data.select_dtypes(float).std(axis=1)/data.select_dtypes(float).mean(axis=1)*100
 
     def _cv_kdeplot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):
         """
