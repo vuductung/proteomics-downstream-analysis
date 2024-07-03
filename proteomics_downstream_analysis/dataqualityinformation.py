@@ -479,7 +479,7 @@ class DataQualityInformation:
         
         if normalize == 'percent':
             for group in groups:
-                data_completeness[group] = float_data[group].notnull().mean(axis=1) * 100
+                data_completeness[group] = float_data[group].notnull().mean(axis=1)
 
         data_completeness = data_completeness.melt()
         data_completeness.columns = ['groups', 'completeness']
