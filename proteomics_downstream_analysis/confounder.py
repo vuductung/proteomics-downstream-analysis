@@ -7,7 +7,7 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import r2_score
 from tqdm import tqdm
 from scipy import stats
-
+from sklearn.preprocessing import LabelEncoder
 
 
 pval_transf = lambda x: -np.log10(x)
@@ -21,6 +21,25 @@ class Confounder:
 
         pass
 
+    def encoder(self, data):
+        cat_variable_mask = ~((data.dtypes == 'float') | (data.dtypes == 'int')).values
+        cat_variables = data.iloc[:,  cat_variable_mask]
+        n_unique_vals = cat_variables.nunique()
+
+        get_dummies_col = (n_unique_vals > 2).values
+
+        dummies = pd.get_dummies(cat_variables.iloc[:, get_dummies_col])
+
+        label_encoder = LabelEncoder()
+
+        mappings = {}
+        for col in cat_variables.iloc[:, ~get_dummies_col].columns:
+            dummies.loc[:, col] = label_encoder.fit_transform(cat_variables[col])
+            mappings[col] = dict(zip(label_encoder.classes_, label_encoder.transform(label_encoder.classes_)))
+
+        encoded_data = pd.concat([data.iloc[:, ~cat_variable_mask], dummies.astype(int)], axis=1)
+
+        return encoded_data, mappings
 
     # some function
 
