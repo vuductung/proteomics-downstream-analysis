@@ -66,7 +66,7 @@ class DataQualityInformation:
             axes.set_title(title)
         fig.tight_layout()
 
-        if savefig == True:
+        if savefig:
             fig.savefig('missing_values_heatmap.pdf', bbox_inches='tight', transparent=True)
 
     def _missing_vals_barplot(self, n_rows=1, n_cols=1, titles=[''], wrap=8, figsize=(10, 5), savefig=False):
@@ -126,7 +126,7 @@ class DataQualityInformation:
 
         fig.tight_layout()
 
-        if savefig == True:
+        if savefig:
             fig.savefig('mean_missing_values_barplot.pdf', bbox_inches='tight', transparent=True)
 
 
@@ -181,7 +181,7 @@ class DataQualityInformation:
                     bbox_to_anchor=(1.4, 0.8), bbox_transform=plt.gcf().transFigure, loc='upper right')
             g.fig.suptitle(title) 
             
-            if savefig == True:
+            if savefig:
                 plt.savefig(f'clustermap_pearson_corr_{title}.pdf', bbox_inches='tight', transparent=True)
 
     def _calculate_coef_var(self, data):
@@ -246,7 +246,7 @@ class DataQualityInformation:
         
         fig.tight_layout()
         
-        if savefig == True:
+        if savefig:
             
             fig.savefig('coef_var_kdeplot.pdf', bbox_inches='tight', transparent=True)
     
@@ -303,7 +303,7 @@ class DataQualityInformation:
     
         fig.tight_layout()
         
-        if savefig == True:
+        if savefig:
             fig.savefig('coef_var_violinplot.pdf', bbox_inches='tight', transparent=True)
 
     def abundance_plot(self, data, top=3):
@@ -391,7 +391,7 @@ class DataQualityInformation:
             
         fig.tight_layout()
         
-        if savefig == True:
+        if savefig:
             fig.savefig('number_of_ids_distplot.pdf', bbox_inches='tight', transparent=True)
 
     def data_quality_info_plot(self, n_rows=1, n_cols=1, titles=[''], figsize=(10, 5), savefig=False):

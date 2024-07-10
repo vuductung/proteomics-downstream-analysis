@@ -31,12 +31,11 @@ class Analysis(MultiLevelData, DimensionalityReduction,
             self.datasets = []
 
     def replace_inf_with_largest_finite(self, df):
-        for column in df.columns:
+        for column in df.select_dtypes(float).columns:
             finite_values = df[column].replace([np.inf, -np.inf], np.nan)  # Replace inf with NaN temporarily
             largest_finite_value = finite_values.max()  # Get the largest finite value
             df[column] = df[column].replace([np.inf, -np.inf], largest_finite_value)  # Replace inf with largest finite value
         return df
-
 
     def sort_by_column_names(self, data):
         '''
