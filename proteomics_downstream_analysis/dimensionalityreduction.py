@@ -186,7 +186,7 @@ class DimensionalityReduction:
           fig, ax = plt.subplots(n_rows, n_cols, figsize=figsize)
 
           for data_set, axes, title in zip(pca_data, np.array(ax).flatten(), titles):
-               if kde == True:
+               if kde:
                     sns.kdeplot(data=data_set[1],
                               x='principal component 1',
                               y='principal component 2',
@@ -199,7 +199,8 @@ class DimensionalityReduction:
                                         x='principal component 1',
                                         y='principal component 2',
                                         hue='target',
-                                        ax=axes)
+                                        ax=axes,
+                                        alpha=0.1)
                     pc1 = "%.2f" % (data_set[0].explained_variance_ratio_[0] * 100)
                     pc2 = "%.2f" % (data_set[0].explained_variance_ratio_[1] * 100)
                     axes.set(xlabel=f'PC1 {pc1}%', ylabel=f'PC2 {pc2}%')
