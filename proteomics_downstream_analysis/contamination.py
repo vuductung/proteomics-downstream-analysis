@@ -62,11 +62,11 @@ class ContaminationAnalysis():
 
         return mask
 
-    def outlier_plot(self, data, plot='bar', kind='zscore', panel=None, contam_type='RBC'):
+    def outlier_plot(self, data, plot='bar', kind='zscore', panel=None, contam_type='RBC', figsize=(20, 5), filepath=None):
 
         groups = data.select_dtypes(float).columns.unique()
         len_groups = len(groups)
-        fig, ax = plt.subplots(1, len_groups, figsize=(20, 5))
+        fig, ax = plt.subplots(1, len_groups, figsize=figsize)
         
         if kind == 'zscore':
         
@@ -105,6 +105,8 @@ class ContaminationAnalysis():
                 axes.axvline(x = upper_lim, color = 'red', linestyle = '--')
                 
         fig.tight_layout()
+
+        fig.savefig(filepath, bbox_inches='tight', transparent=True)
 
     def compute_zscore_outliers(self, data):
 
