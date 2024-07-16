@@ -14,7 +14,6 @@ pval_transf = lambda x: -np.log10(x)
 int_transf = lambda x: np.log2(x)
 
 
-
 class Confounder:
 
     def __init__(self):
