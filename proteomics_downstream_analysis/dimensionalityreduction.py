@@ -50,7 +50,6 @@ class DimensionalityReduction:
           if data is None:
                df = self.data.select_dtypes(include =['float64']).T.copy()
                
-
           else:
                # prepare the dataframe for PCA
                df = data.select_dtypes(include =['float64']).T.copy()
@@ -150,8 +149,8 @@ class DimensionalityReduction:
           sns.despine()
           plt.show()
 
-     def pca_plot(self, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), kde=False, savefig=False):
-        
+     def pca_plot(self, data, palette, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), kde=False, filepath=False):
+
           """
           Plot PCA for one or more datasets.
 
@@ -168,7 +167,7 @@ class DimensionalityReduction:
 
           figsize : tuple
                Figure size (Default value = (5,5)
-               
+
           savefig : bool
                If True, save figure (Default value = False)
 
@@ -178,10 +177,10 @@ class DimensionalityReduction:
           """
 
           if n_rows == 1 and n_cols == 1:
-               pca_data = [self._pca()]
+               pca_data = [self._pca(data)]
 
           else:
-               pca_data = [self._pca(i) for i in self.datasets]
+               pca_data = [self._pca(i) for i in data]
 
           fig, ax = plt.subplots(n_rows, n_cols, figsize=figsize)
 
@@ -196,22 +195,23 @@ class DimensionalityReduction:
                               ax=axes)
                else:
                     sns.scatterplot(data=data_set[1],
-                                        x='principal component 1',
-                                        y='principal component 2',
-                                        hue='target',
-                                        ax=axes,
-                                        alpha=0.1)
+                                   x='principal component 1',
+                                   y='principal component 2',
+                                   hue='target',
+                                   ax=axes, 
+                                   palette=palette)
+                    
                     pc1 = "%.2f" % (data_set[0].explained_variance_ratio_[0] * 100)
                     pc2 = "%.2f" % (data_set[0].explained_variance_ratio_[1] * 100)
                     axes.set(xlabel=f'PC1 {pc1}%', ylabel=f'PC2 {pc2}%')
                     axes.set_title(title)
-                    sns.despine()
+                    plt.legend(title=None)
 
           fig.tight_layout()
           plt.show()
 
-          if savefig:
-               fig.savefig('pca_plots.pdf', bbox_inches='tight', transparent=True)
+          if filepath:
+               fig.savefig(filepath, bbox_inches='tight', transparent=True)
             
      def int_pca_plot(self, n_rows=1, n_cols=1, titles=[''], height=500, width=700):
 
@@ -451,101 +451,101 @@ class DimensionalityReduction:
           if savefig == True:
                fig.savefig('biplot.pdf', bbox_inches='tight')
 
-     def _umap(self, data=None, n_neighbors=3):
+     # def _umap(self, data=None, n_neighbors=3):
  
-          """
-          Generate UMAP object
+     #      """
+     #      Generate UMAP object
 
-          Parameters
-          ----------
-          data : pd.DataFrame
-               (Default value = None)
+     #      Parameters
+     #      ----------
+     #      data : pd.DataFrame
+     #           (Default value = None)
 
-          n_neighbors : int
-               (Default value = 3)
+     #      n_neighbors : int
+     #           (Default value = 3)
 
-          Returns
-          -------
-          pd.DataFrame
-          """
-          if isinstance(data, pd.DataFrame):
-               df = data.select_dtypes(include =['float64']).T.copy()
-          else:
-               df = self.data.select_dtypes(include =['float64']).T.copy()
+     #      Returns
+     #      -------
+     #      pd.DataFrame
+     #      """
+     #      if isinstance(data, pd.DataFrame):
+     #           df = data.select_dtypes(include =['float64']).T.copy()
+     #      else:
+     #           df = self.data.select_dtypes(include =['float64']).T.copy()
 
-          # prepare features variable (Genes)
-          features = list(np.arange(df.shape[1]))
-          df.columns = features
+     #      # prepare features variable (Genes)
+     #      features = list(np.arange(df.shape[1]))
+     #      df.columns = features
           
-          # prepare target column (sample types)
-          df['target'] = df.index
-          df = df.reset_index(drop= True)
+     #      # prepare target column (sample types)
+     #      df['target'] = df.index
+     #      df = df.reset_index(drop= True)
 
-          # Separating out the features
-          x = df.loc[:, features].values
+     #      # Separating out the features
+     #      x = df.loc[:, features].values
 
-          # Standardizing the features
-          x = StandardScaler().fit_transform(x)
-          reducer = mp.UMAP(n_neighbors=n_neighbors, random_state=42)
-          embedding = reducer.fit_transform(x)
-          embedding_data = pd.DataFrame(data = embedding
-                                   ,columns = ['UMAP1', 'UMAP2'])
+     #      # Standardizing the features
+     #      x = StandardScaler().fit_transform(x)
+     #      reducer = mp.UMAP(n_neighbors=n_neighbors, random_state=42)
+     #      embedding = reducer.fit_transform(x)
+     #      embedding_data = pd.DataFrame(data = embedding
+     #                               ,columns = ['UMAP1', 'UMAP2'])
           
-          finalDf = pd.concat([embedding_data, df[['target']]], axis = 1)
+     #      finalDf = pd.concat([embedding_data, df[['target']]], axis = 1)
           
-          return finalDf
+     #      return finalDf
     
-     def umap_plot(self, n_neighbors=3, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), savefig=False):
+     # def umap_plot(self, n_neighbors=3, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), savefig=False):
 
-          """
-          Plot UMAP for one or more datasets.
+     #      """
+     #      Plot UMAP for one or more datasets.
 
-          Parameters
-          ----------
-          n_neighbors : int
-               (Default value = 3)
+     #      Parameters
+     #      ----------
+     #      n_neighbors : int
+     #           (Default value = 3)
 
-          n_rows : int
-               Number of rows in subplot (Default value = 1)
+     #      n_rows : int
+     #           Number of rows in subplot (Default value = 1)
 
-          n_cols : int
-               Number of columns in subplot (Default value = 1)
+     #      n_cols : int
+     #           Number of columns in subplot (Default value = 1)
 
-          titles : list
-               List of titles in subplot (Default value = [''])
+     #      titles : list
+     #           List of titles in subplot (Default value = [''])
 
-          figsize : tuple
-               Figure size (Default value = (5, 5)
+     #      figsize : tuple
+     #           Figure size (Default value = (5, 5)
                
-          savefig :
-               (Default value = False)
+     #      savefig :
+     #           (Default value = False)
 
-          Returns
-          -------
-          matplotlib.pyplot
-          """
+     #      Returns
+     #      -------
+     #      matplotlib.pyplot
+     #      """
           
-          if n_rows == 1 and n_cols == 1:
-               datasets = [self.data]
+     #      if n_rows == 1 and n_cols == 1:
+     #           datasets = [self.data]
 
-          else:
-               datasets = self.datasets.copy()
+     #      else:
+     #           datasets = self.datasets.copy()
 
-          # plot the pca
-          umap_datasets = [self._umap(data=i, n_neighbors=n_neighbors) for i in datasets]
+     #      # plot the pca
+     #      umap_datasets = [self._umap(data=i, n_neighbors=n_neighbors) for i in datasets]
 
-          fig, ax = plt.subplots(n_rows, n_cols, figsize=figsize)
+     #      fig, ax = plt.subplots(n_rows, n_cols, figsize=figsize)
 
-          for umap_data, axes, title in zip(umap_datasets, np.array(ax).flatten(), titles):
-               sns.scatterplot(data = umap_data, x = 'UMAP1', y = 'UMAP2', hue = 'target', ax=axes)
-               axes.set_title(title)
-               axes.legend(loc='best')
-               sns.despine()
+     #      for umap_data, axes, title in zip(umap_datasets, np.array(ax).flatten(), titles):
+     #           sns.scatterplot(data = umap_data, x = 'UMAP1', y = 'UMAP2', hue = 'target', ax=axes)
+     #           axes.set_title(title)
+     #           axes.legend(loc='best')
+     #           sns.despine()
           
-          fig.tight_layout()
+     #      fig.tight_layout()
           
-          if savefig == True:
-               fig.savefig('umap_figs.pdf', bbox_inches='tight', transparent=True)
+     #      if savefig == True:
+     #           fig.savefig('umap_figs.pdf', bbox_inches='tight', transparent=True)
 
      def _tsne(self, data=None, perplexity=10, learning_rate='auto', early_exaggeration=12):
 
