@@ -21,8 +21,8 @@ class Visualizer:
         pass
 
     def volcano_plot(self, n_rows, n_cols, gene_list=None, figsize = (8,8),
-                     savefig = False, upper_fc_cutoff = 1, lower_fc_cutoff = 1,
-                     annot = None, gene_column = 'Genes', qvalue=True):
+                     filepath = False, upper_fc_cutoff = 1, lower_fc_cutoff = 1,
+                     annot = None, gene_column = 'Genes', qvalue=True, palette=sns.color_palette("deep", 20)):
     
         """Plot a volcano plot.
 
@@ -65,15 +65,15 @@ class Visualizer:
 
                 if (self.qv_data[i] < 0.05).sum() == 0:
 
-                    sns.scatterplot(x = self.fc_data[i], y = self.pv_data[i], color = 'lightgrey', alpha = 0.5, ax=axes)
+                    sns.scatterplot(x = self.fc_data[i], y = self.pv_data[i], color = 'lightgrey', alpha = 0.5, ax=axes, linewidth=0)
                     sns.scatterplot(x = self.fc_data[self.pv_data.select_dtypes('float') > 1.3][i],
-                                    y = self.pv_data[self.pv_data.select_dtypes('float') > 1.3][i], color = sns.color_palette("deep", 20)[1], ax=axes)
+                                    y = self.pv_data[self.pv_data.select_dtypes('float') > 1.3][i], color = palette[0], ax=axes, linewidth=0)
                     sns.scatterplot(x = self.fc_data[(self.pv_data.select_dtypes('float') > 1.3) & (self.fc_data.select_dtypes('float') < 0)][i],
                                     y = self.pv_data[(self.pv_data.select_dtypes('float') > 1.3) & (self.fc_data.select_dtypes('float') < 0)][i],
-                                    color = sns.color_palette("deep", 20)[2], ax=axes)
+                                    color = palette[1], ax=axes, linewidth=0)
                     
-                    axes.set(xlabel=f'log2 fold change ({i})',
-                             ylabel=f'-log10 p-value ({i})')
+                    axes.set_xlabel('log2 fold change', fontsize=10)
+                    axes.set_ylabel('-log10 p-value', fontsize=10)
                     
                     # set p-value threshold 
                     axes.axhline(1.3,ls = '--', color = 'lightgrey')
@@ -90,15 +90,16 @@ class Visualizer:
                         indices = self.fc_data[self.fc_data[gene_column].isin(gene_list)].index
 
                 else:
-                    sns.scatterplot(x = self.fc_data[i], y = self.pv_data[i], color = 'lightgrey', alpha = 0.5, ax=axes)
+                    sns.scatterplot(x = self.fc_data[i], y = self.pv_data[i], color = 'lightgrey', alpha = 0.5, ax=axes, linewidth=0)
                     sns.scatterplot(x = self.fc_data[self.qv_data.select_dtypes('float') < 0.05][i],
-                                    y = self.pv_data[self.qv_data.select_dtypes('float') < 0.05][i], color = 'lightcoral', ax=axes)
+                                    y = self.pv_data[self.qv_data.select_dtypes('float') < 0.05][i], color = palette[0], ax=axes, linewidth=0)
                     sns.scatterplot(x = self.fc_data[(self.qv_data.select_dtypes('float') < 0.05) & (self.fc_data.select_dtypes('float') < 0)][i],
                                     y = self.pv_data[(self.qv_data.select_dtypes('float') < 0.05) & (self.fc_data.select_dtypes('float') < 0)][i],
-                                    color = 'cornflowerblue', ax=axes)
+                                    color = palette[1], ax=axes, linewidth=0)
                     
-                    axes.set(xlabel=f'log2 fold change ({i})',
-                             ylabel=f'-log10 p-value ({i})')
+                    axes.set_xlabel('log2 fold change', fontsize=10)
+                    axes.set_ylabel('-log10 p-value', fontsize=10)
+
                     
                     # set q-value threshold
                     threshold = self.pv_data[self.qv_data[i] < 0.05][i].sort_values().values[0]
@@ -115,15 +116,15 @@ class Visualizer:
                         indices = self.fc_data[self.fc_data[gene_column].isin(gene_list)].index
 
             if qvalue is False:
-                sns.scatterplot(x = self.fc_data[i], y = self.pv_data[i], color = 'lightgrey', alpha = 0.5, ax=axes)
+                sns.scatterplot(x = self.fc_data[i], y = self.pv_data[i], color = 'lightgrey', alpha = 0.5, ax=axes, linewidth=0)
                 sns.scatterplot(x = self.fc_data[self.pv_data.select_dtypes('float') > 1.3][i],
-                                y = self.pv_data[self.pv_data.select_dtypes('float') > 1.3][i], color = sns.color_palette("deep", 20)[1], ax=axes)
+                                y = self.pv_data[self.pv_data.select_dtypes('float') > 1.3][i], color = palette[0], ax=axes, linewidth=0)
                 sns.scatterplot(x = self.fc_data[(self.pv_data.select_dtypes('float') > 1.3) & (self.fc_data.select_dtypes('float') < 0)][i],
                                 y = self.pv_data[(self.pv_data.select_dtypes('float') > 1.3) & (self.fc_data.select_dtypes('float') < 0)][i],
-                                color = sns.color_palette("deep", 20)[2], ax=axes)
+                                color = palette[1], ax=axes, linewidth=0)
                 
-                axes.set(xlabel=f'log2 fold change ({i})',
-                             ylabel=f'-log10 p-value ({i})')
+                axes.set_xlabel('log2 fold change', fontsize=10)
+                axes.set_ylabel('-log10 p-value', fontsize=10)
                 
                 # set p-value threshold 
                 axes.axhline(1.3,ls = '--', color = 'lightgrey')
@@ -148,15 +149,10 @@ class Visualizer:
                 else:
                     indices = genes_indices.tolist()
 
-            sns.scatterplot(x = self.fc_data.loc[indices][i],
-                            y = self.pv_data.loc[indices][i],
-                            color = 'lightblue',
-                            ax=axes)
-            sns.despine()
-
+     
             # annotation
             if indices:
-                texts = [axes.text(self.fc_data[i][idx], self.pv_data[i][idx], self.fc_data[gene_column][idx], ha='center', va='center', fontsize=9) for idx in set(indices)]
+                texts = [axes.text(self.fc_data[i][idx], self.pv_data[i][idx], self.fc_data[gene_column][idx], ha='center', va='center', fontsize=8) for idx in set(indices)]
                 adjust_text(texts, arrowprops = dict(arrowstyle = '-', color = 'black'), ax=axes)
             
             else:
@@ -172,9 +168,10 @@ class Visualizer:
             axes.text(x2, y, sample_annot[1],
                     fontsize=12,
                     bbox=dict(boxstyle='round', fc='w', ec='black', alpha=0.3))
+            
+            if filepath:
+                fig.savefig(filepath, bbox_inches='tight', transparent=True)
 
-            if savefig == True:
-                fig.savefig(f'{i.replace("/", "_vs_")}_volcano.pdf', bbox_inches = "tight")
 
     def sign_prots_plot(self, normalized=False, figsize=(8, 5), savefig=False):
 
@@ -193,8 +190,6 @@ class Visualizer:
 
         Returns
         -------
-
-        
         """
 
         sign_data = (self.qv_data.select_dtypes('float') < 0.05).sum(axis=0)
