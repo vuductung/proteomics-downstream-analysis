@@ -22,3 +22,17 @@ def format_ytick_label(ytick):
 def float_string_split(data):
     return data.select_dtypes(float), data.select_dtypes('string')
 
+def intersection_of_list_of_lists(list_of_lists):
+    if not list_of_lists:
+        return []  # Return an empty list if the input is empty
+
+    # Initialize the intersection set with the first list
+    intersection_set = set(list_of_lists[0])
+    
+    # Iterate over the remaining lists and update the intersection set
+    for lst in list_of_lists[1:]:
+        intersection_set.intersection_update(lst)
+    
+    # Convert the intersection set back to a list (optional, depending on the requirement)
+    return list(intersection_set)
+
