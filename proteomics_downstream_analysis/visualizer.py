@@ -24,7 +24,8 @@ class Visualizer:
                      filepath = False, upper_fc_cutoff = 1, lower_fc_cutoff = 1,
                      annot = None, gene_column = 'Genes', qvalue=True, palette=sns.color_palette("deep", 20)):
     
-        """Plot a volcano plot.
+        """
+        Plot a volcano plot.
 
         Parameters
         ----------
