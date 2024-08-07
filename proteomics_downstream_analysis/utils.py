@@ -1,6 +1,7 @@
 import os
 import ipykernel
 from IPython.core.getipython import get_ipython
+import textwrap
 
 def is_jupyter_notebook():
     return get_ipython() is not None and isinstance(get_ipython(), ipykernel.zmqshell.ZMQInteractiveShell)
@@ -35,4 +36,7 @@ def intersection_of_list_of_lists(list_of_lists):
     
     # Convert the intersection set back to a list (optional, depending on the requirement)
     return list(intersection_set)
+
+def wrap_labels(text, width):
+    return textwrap.fill(text, width)
 
