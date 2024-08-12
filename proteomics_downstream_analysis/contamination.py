@@ -66,7 +66,7 @@ class ContaminationAnalysis:
             data without outliers
 
         """
-
+        
         outlier_master_mask = np.array([], dtype=bool)
 
         for i in data.select_dtypes(float).columns.unique():
@@ -84,15 +84,15 @@ class ContaminationAnalysis:
                 outlier_mask = self._compute_missing_values_outlier(data[i])[-1]
                 outlier_master_mask = np.concatenate((outlier_master_mask, outlier_mask))
 
-        sorted_data = self._sort_by_column_names(data)
-        inliers_indices = np.where(~(outlier_master_mask))[0]
+        _ = self._sort_by_column_names(data) # update from_sorted_to_orig_indices attribute
+        outlier_master_mask_resorted =  outlier_master_mask[self.from_sorted_to_orig_indices]
 
         if remove:
-            inlier_data = sorted_data.iloc[:, inliers_indices]
-            return inlier_data
+            inlier_indices = np.where(~(outlier_master_mask_resorted))[0]
+            return self._remove_outliers(data, inlier_indices)
 
         else:
-            return inliers_indices, outlier_master_mask
+            return outlier_master_mask_resorted
 
     def outlier_plot(
         self,
@@ -159,9 +159,9 @@ class ContaminationAnalysis:
         upper_lim = self._upper_limit(protein_outliers)
 
         # get the mask to filter outliers
-        mask = self._get_outlier_mask(upper_lim, protein_outliers)
+        outlier_mask = self._get_outlier_mask(upper_lim, protein_outliers)
 
-        return robust_zscores, protein_outliers, upper_lim, mask
+        return robust_zscores, protein_outliers, upper_lim, outlier_mask
     
     def _compute_contamination_outlier(self, data, contam_type="RBC"):
         # sort data
@@ -260,6 +260,17 @@ class ContaminationAnalysis:
 
         return nan_values
     
+    def _remove_outliers(self, data, inlier_indices):
+        # set all string columns to index
+        reindexed_data = data.set_index(data.select_dtypes("string").columns.tolist())
+        inlier_data = reindexed_data.iloc[:, inlier_indices]
+        return inlier_data
+    
+    def _set_all_str_to_index(self, data):
+        # set all string columns to index
+        data = data.set_index(data.select_dtypes("string").columns.tolist())
+        return data
+
     def _missing_values_outlier(self, data, experimental=True, remove=False):
         if experimental:
             master_mask = np.array([], dtype=bool)
