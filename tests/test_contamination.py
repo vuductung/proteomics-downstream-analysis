@@ -82,6 +82,40 @@ class TestContamination(unittest.TestCase):
         self.data5["b"] = self.data5["b"].astype("float")
         self.data5["Genes"] = self.data5["Genes"].astype("string")
 
+        self.id_data = pd.DataFrame({"identifier" : np.array(["1", "2", "3", "4", "5", "6", "7", "8"]),
+                                    "b" : np.array(["a", "d", "f", "a", "d", "f", "a", "d"]),
+                                    "c" : np.array(["g", "h", "j", "g", "h", "j", "g", "h"]),})
+        
+        self.data6 = pd.DataFrame({"Genes" : np.array(["PRDX2", "CA2", "CAT", "d", "e", "f", "g"]),
+                                    "b" : np.array([1, 2, 3, 4, 5, 1, 7]),
+                                    "c" : np.array([2, 21, 9, 5, 8, 7, 4]),
+                                    "e" : np.array([3, 21, 1, 3, 5, 8, 2]),
+                                    "f" : np.array([2, 10, 3, 6, 3, 1, 7]),
+                                    "g" : np.array([4, 11, 8, 2, 1, 2, 2]),
+                                    "h" : np.array([11, 15, 1, 6, 11, 6, 1]),
+                                    "i" : np.array([12, 10, 8, 2, 2, 6, 211]),
+                                    "j" : np.array([412, 231, 234, 1241, 221, 321, 4]),
+                                    }
+                        )
+        self.data6.columns = ["Genes", "a", "b", "a", "b", "b", "a", "a", "b"]
+        self.data6["a"] = self.data6["a"].astype("float")
+        self.data6["b"] = self.data6["b"].astype("float")
+        self.data6["Genes"] = self.data6["Genes"].astype("string")
+
+    def test_resort_by_column_names(self):
+        output = self.helper._sort_by_column_names(data=self.data5)
+        indices = self.helper.from_sorted_to_orig_indices
+        resorted_output = output.iloc[:, indices].values
+        expected_result = self.data5.set_index("Genes").values
+        self.assertTrue((resorted_output == expected_result).all())
+
+    def test_sorting_by_column_names_using_indices(self):
+        output = self.helper._sort_by_column_names(data=self.data5)
+        indices = self.helper.from_orig_to_sorted_indices
+        sorted_data = self.data5.set_index("Genes").iloc[:, indices].values
+        expected_result = output.values
+        self.assertTrue((sorted_data == expected_result).all())
+
     def test_sort_by_column_names(self):
         output = self.helper._sort_by_column_names(data=self.data5)
         expected_result = ["a", "a", "a", "a", "b", "b", "b", "b"]
@@ -109,37 +143,37 @@ class TestContamination(unittest.TestCase):
         self.assertTrue((output[0] == expected_value).all())
         
     def test_outlier_zscore_removal(self):
-         
         output = self.helper.outlier(self.data, remove=True)
-        expected_value = 4
+        expected_value = 3
         self.assertTrue(output.shape[1] == expected_value)
 
     def test_outlier_zscore_no_removal(self):
-        
         output = self.helper.outlier(self.data)
         expected_result = np.array([0, 1, 2])
         self.assertTrue((output[0] == expected_result).all())
 
-    def test_count_missing_values(self):
-         
-        nan_values = self.helper._count_missing_values(self.data3)
-        expected_values = np.array([1, 5, 2, 0, 0, 0, 0, 0])
+    def test_outlier_zscore_removal_with_two_exp_groups(self):
+        result = self.helper.outlier(self.data6, remove=True)
+        expected_result = self.data6.set_index("Genes").iloc[:, :-2]
+        pd.testing.assert_frame_equal(result, expected_result)
 
+    def test_count_missing_values(self):
+        nan_values = self.helper._count_missing_values(self.data3,)
+        expected_values = np.array([1, 5, 2, 0, 0, 0, 0, 0])
         self.assertTrue((nan_values == expected_values).all()) 
 
     def test_compute_rbc_total_ratio(self):
-         
         rbc_total_ratio = self.helper._compute_rbc_total_ratio(self.data2)
-        
         assert rbc_total_ratio[1] == approx(13/37)
 
     def test_outliers(self):
-         mask = self.helper._get_outlier_mask(5, np.arange(10))
-         self.assertTrue((mask == np.array([False, False, False, False, False, False, True, True, True, True])).all())
+        result = self.helper._get_outlier_mask(5, np.arange(10))
+        expected_result = np.array([False, False, False, False, False, True, True, True, True, True])
+        self.assertTrue((result == expected_result).all())
 
     def test_upper_limit(self):
-            upper_lim = self.helper._upper_limit(np.arange(10))
-            assert upper_lim == approx(20.25)
+        upper_lim = self.helper._upper_limit(np.arange(10))
+        assert upper_lim == approx(20.25)
 
     def test_number_of_protein_outliers(self):
         outliers = self.helper._number_of_protein_outliers(self.data4.select_dtypes(float))
