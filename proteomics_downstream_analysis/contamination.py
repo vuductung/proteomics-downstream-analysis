@@ -10,7 +10,7 @@ from pathlib import Path
 
 class ContaminationAnalysis:
     """
-    This class contains methods for detecting and removing contamination in a 2D dataframe.
+    This class contains methods for detecting and removing contamination in a dataframe (2D array).
     """
 
     def __init__(self):
@@ -20,6 +20,9 @@ class ContaminationAnalysis:
         # Construct the path to the Excel file
         filepath = current_dir / ".." / "data" / "contamination" / "contam_panel.xlsx"
         self.panel = pd.read_excel(filepath)
+
+        self.from_orig_to_sorted_indices = None
+        self.from_sorted_to_orig_indices = None
 
     def outlier(self, data, kind="zscore", remove=False, contam_type="RBC"):
         """
@@ -35,7 +38,7 @@ class ContaminationAnalysis:
             what kind of outlier detection algorithm to use. 'zscore' for
             zscore algorithm, 'contamination' to detect e.g. RBC contamination
             and 'missing values' for detecting outliers based on the numbers
-            of missing values
+            of missing valuesrot
 
         remove : boolean
             if True removes outliers from dataset
@@ -64,40 +67,32 @@ class ContaminationAnalysis:
 
         """
 
-        # sort data
-        data = self._sort_by_column_names(data)
-
-        master_mask = np.array([], dtype=bool)
+        outlier_master_mask = np.array([], dtype=bool)
 
         for i in data.select_dtypes(float).columns.unique():
             if kind == "zscore":
-                _, _, _, mask = self._compute_zscore_outliers(data[i])
-                master_mask = np.concatenate((master_mask, mask))
+                outlier_mask = self._compute_zscore_outliers(data[i])[-1]
+                outlier_master_mask = np.concatenate((outlier_master_mask, outlier_mask))
 
             elif kind == "contamination":
-                _, _, mask = self._compute_contamination_outlier(
+                outlier_mask = self._compute_contamination_outlier(
                     data[["Genes", i]], contam_type
-                )
-                master_mask = np.concatenate((master_mask, mask))
+                )[-1]
+                outlier_master_mask = np.concatenate((outlier_master_mask, outlier_mask))
 
             elif kind == "missing values":
-                _, _, mask = self._compute_missing_values_outlier(data[i])
-                master_mask = np.concatenate((master_mask, mask))
+                outlier_mask = self._compute_missing_values_outlier(data[i])[-1]
+                outlier_master_mask = np.concatenate((outlier_master_mask, outlier_mask))
 
-        # get number of string cols to correct the inliers/outliers index
-        number_of_string_cols = len(data.select_dtypes("string").columns)
+        sorted_data = self._sort_by_column_names(data)
+        inliers_indices = np.where(~(outlier_master_mask))[0]
 
         if remove:
-            inliers = np.where(~(master_mask))[0]
-            inliers = inliers + number_of_string_cols
-            inliers = np.concatenate((np.arange(number_of_string_cols), inliers))
-            data = data.iloc[:, inliers]
-
-            return data
+            inlier_data = sorted_data.iloc[:, inliers_indices]
+            return inlier_data
 
         else:
-            return np.where(master_mask)[0], master_mask
-
+            return inliers_indices, outlier_master_mask
 
     def outlier_plot(
         self,
@@ -131,11 +126,12 @@ class ContaminationAnalysis:
 
             if plot == "bar":
                 sns.barplot(
-                    x=[*range(len(outliers))], y=outliers, color="lightgrey", ax=axes
+                    x=[*range(len(outliers))], y=outliers, color="lightgrey", ax=axes, width=1
                 )
 
                 axes.set_title(f"{group}")
                 axes.set_ylabel("outlier frequency")
+                axes.set_xticks([])
                 axes.axhline(y=upper_lim, color="red", linestyle="--")
 
             if plot == "hist":
@@ -148,7 +144,7 @@ class ContaminationAnalysis:
         fig.tight_layout()
         if filepath:
             fig.savefig(filepath, bbox_inches="tight", transparent=True)
-
+            
     def _compute_zscore_outliers(self, data):
         # sort data
         data = self._sort_by_column_names(data)
@@ -163,7 +159,7 @@ class ContaminationAnalysis:
         upper_lim = self._upper_limit(protein_outliers)
 
         # get the mask to filter outliers
-        mask = self._outliers(upper_lim, protein_outliers)
+        mask = self._get_outlier_mask(upper_lim, protein_outliers)
 
         return robust_zscores, protein_outliers, upper_lim, mask
     
@@ -178,7 +174,7 @@ class ContaminationAnalysis:
         upper_lim = self._upper_limit(rbc_total_ratio)
 
         # get the mask to filter outliers
-        mask = self._outliers(upper_lim, rbc_total_ratio)
+        mask = self._get_outlier_mask(upper_lim, rbc_total_ratio)
 
         return rbc_total_ratio, upper_lim, mask
     
@@ -193,19 +189,33 @@ class ContaminationAnalysis:
         upper_lim = self._upper_limit(nan_values)
 
         # get the mask to filter outliers
-        mask = self._outliers(upper_lim, nan_values)
+        mask = self._get_outlier_mask(upper_lim, nan_values)
 
         return nan_values, upper_lim, mask
 
-    def _sort_by_column_names(self, data):
+    def _sort_by_column_names(self, data, id_data=None, col_name=None):
+
+        if id_data is None:
+            col_names = data.select_dtypes("float").columns
+            ids = list(np.arange(len(col_names)))
+            id_data = pd.DataFrame({"col_name": col_names,
+                                    "ID": ids})
+            sorted_id_data = id_data.sort_values("col_name")
+        
+        else:
+            sorted_id_data = id_data.sort_values(col_name)
+
+        self.from_orig_to_sorted_indices = sorted_id_data.index.tolist()
+        self.from_sorted_to_orig_indices = sorted_id_data.reset_index().sort_values("index").index.tolist()
+
         # sort data by column names
-        string_data = data.select_dtypes("string")
-        float_data = data.select_dtypes(float)
+        non_float_columns = data.select_dtypes(exclude="float").reset_index().columns.tolist()
 
-        float_data = float_data.sort_index(axis=1)
-        data = string_data.join(float_data)
+        reindexed_data = data.reset_index().set_index(non_float_columns)
 
-        return data
+        reindexed_data_sorted = reindexed_data.sort_index(axis=1)
+
+        return reindexed_data_sorted
     
     def _robust_zscore(self, data):
         # get the robust zscore
@@ -225,7 +235,7 @@ class ContaminationAnalysis:
         q1 = np.percentile(protein_outliers, 25)
         q3 = np.percentile(protein_outliers, 75)
         iqr = q3 - q1
-        upper_lim = q3 + 1.5 * iqr
+        upper_lim = q3 + 3 * iqr
 
         return upper_lim
     
@@ -233,14 +243,14 @@ class ContaminationAnalysis:
         # calculat the RBC to total protein ratio
         total = data.sum(axis=0, numeric_only=True)
         contam = self.panel[self.panel["Type"] == contam_type]["Gene names"].tolist()
-        rbc_sum = data[data["Genes"].isin(contam)].sum(axis=0, numeric_only=True)
+        rbc_sum = data[data.reset_index()["Genes"].isin(contam).values].sum(axis=0, numeric_only=True)
         rbc_total_ratio = rbc_sum / total
 
         return rbc_total_ratio.values
 
-    def _outliers(self, upper_lim, protein_outliers):
+    def _get_outlier_mask(self, upper_lim, protein_outliers):
         # get the mask to filter outliers
-        mask = np.greater(protein_outliers, upper_lim)
+        mask = protein_outliers >= upper_lim
 
         return mask
     
@@ -249,6 +259,29 @@ class ContaminationAnalysis:
         nan_values = data.select_dtypes(float).isna().sum(axis=0).values
 
         return nan_values
+    
+    def _missing_values_outlier(self, data, experimental=True, remove=False):
+        if experimental:
+            master_mask = np.array([], dtype=bool)
+            for i in data.select_dtypes(float).columns.unique():
+                _, _, mask = self._compute_missing_values_outlier(data[i])
+                master_mask = np.concatenate((master_mask, mask))
+
+        else:
+            _, _, master_mask = self._compute_missing_values_outlier(data)
+
+        # get number of string cols to correct the inliers/outliers index
+        number_of_string_cols = len(data.select_dtypes("string").columns)
+
+        if remove:
+            inliers = np.where(~(master_mask))[0]
+            inliers = inliers + number_of_string_cols
+            inliers = np.concatenate((np.arange(number_of_string_cols), inliers))
+            data = data.iloc[:, inliers]
+            return data
+
+        else:
+            return np.where(master_mask)[0] + number_of_string_cols
 
     def zscore_outlier(self, data, experimental=True, remove=False):
         # sort data
@@ -332,29 +365,6 @@ class ContaminationAnalysis:
                 axes.axhline(y=upper_lim, color="red", linestyle="--")
 
             fig.tight_layout()
-
-    def missing_values_outlier(self, data, experimental=True, remove=False):
-        if experimental:
-            master_mask = np.array([], dtype=bool)
-            for i in data.select_dtypes(float).columns.unique():
-                _, _, mask = self._compute_missing_values_outlier(data[i])
-                master_mask = np.concatenate((master_mask, mask))
-
-        else:
-            _, _, master_mask = self._compute_missing_values_outlier(data)
-
-        # get number of string cols to correct the inliers/outliers index
-        number_of_string_cols = len(data.select_dtypes("string").columns)
-
-        if remove:
-            inliers = np.where(~(master_mask))[0]
-            inliers = inliers + number_of_string_cols
-            inliers = np.concatenate((np.arange(number_of_string_cols), inliers))
-            data = data.iloc[:, inliers]
-            return data
-
-        else:
-            return np.where(master_mask)[0] + number_of_string_cols
 
     def missing_values_outlier_plot(self, data, experimental):
         # compute the robust zscore to find outliers
