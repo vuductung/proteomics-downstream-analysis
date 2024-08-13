@@ -66,22 +66,23 @@ class ContaminationAnalysis:
             data without outliers
 
         """
-        
         outlier_master_mask = np.array([], dtype=bool)
+        sorted_data = self._sort_by_column_names(data).reset_index()
+        columns = sorted_data.select_dtypes(float).columns.unique()
 
-        for i in data.select_dtypes(float).columns.unique():
+        for i in columns:
             if kind == "zscore":
-                outlier_mask = self._compute_zscore_outliers(data[i])[-1]
+                outlier_mask = self._compute_zscore_outliers(sorted_data[i])[-1]
                 outlier_master_mask = np.concatenate((outlier_master_mask, outlier_mask))
 
             elif kind == "contamination":
                 outlier_mask = self._compute_contamination_outlier(
-                    data[["Genes", i]], contam_type
+                    sorted_data[["Genes", i]], contam_type
                 )[-1]
                 outlier_master_mask = np.concatenate((outlier_master_mask, outlier_mask))
 
             elif kind == "missing values":
-                outlier_mask = self._compute_missing_values_outlier(data[i])[-1]
+                outlier_mask = self._compute_missing_values_outlier(sorted_data[i])[-1]
                 outlier_master_mask = np.concatenate((outlier_master_mask, outlier_mask))
 
         _ = self._sort_by_column_names(data) # update from_sorted_to_orig_indices attribute
