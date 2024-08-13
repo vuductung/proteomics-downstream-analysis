@@ -128,7 +128,9 @@ class TestContamination(unittest.TestCase):
 
     def test_missing_values_no_removal(self):
         output = self.helper.outlier(data=self.data3, kind="missing values")
-        self.assertTrue((output[0] == np.array([0, 2, 3, 4, 5, 6, 7])).all())
+        expected_result = np.array([False, True, False, False, False, False, False, False])
+        print(output)
+        self.assertTrue((output == expected_result).all())
         
     def test_contamination_removal(self):
 
@@ -139,8 +141,8 @@ class TestContamination(unittest.TestCase):
 
     def test_contamination_no_removal(self):
         output = self.helper.outlier(self.data2, "contamination", False)
-        expected_value = np.array([0, 1, 2, 3, 4, 5, 6])
-        self.assertTrue((output[0] == expected_value).all())
+        expected_value = np.array([False, False, False, False, False, False, False, True])
+        self.assertTrue((output == expected_value).all())
         
     def test_outlier_zscore_removal(self):
         output = self.helper.outlier(self.data, remove=True)
@@ -148,9 +150,9 @@ class TestContamination(unittest.TestCase):
         self.assertTrue(output.shape[1] == expected_value)
 
     def test_outlier_zscore_no_removal(self):
-        output = self.helper.outlier(self.data)
-        expected_result = np.array([0, 1, 2])
-        self.assertTrue((output[0] == expected_result).all())
+        output = self.helper.outlier(data=self.data, kind="zscore")
+        expected_result = np.array([False, False, False, True])
+        self.assertTrue((output == expected_result).all())
 
     def test_outlier_zscore_removal_with_two_exp_groups(self):
         result = self.helper.outlier(self.data6, remove=True)
