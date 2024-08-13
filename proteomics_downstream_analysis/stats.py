@@ -279,3 +279,37 @@ class Statistics():
         summary_data = pd.concat([string_data, float_data], axis=1)
 
         self.summary_data = summary_data.copy()
+    
+    def nan_correlation_matrix(self, data):
+        n = len(data)
+        correlation_matrix = np.empty((n, n))
+
+        for i in range(n):
+            for j in range(n):  # Compute all elements
+                mask = np.isfinite(data[i]) & np.isfinite(data[j])
+
+                if np.sum(mask) > 1:  # Ensure there are at least two data points
+                    xi = data[i][mask]
+                    xj = data[j][mask]
+                    std_dev_i = np.std(xi)
+                    std_dev_j = np.std(xj)
+
+                    if (std_dev_i > 0) and (std_dev_j > 0):
+                        mean_i = np.mean(xi)
+                        mean_j = np.mean(xj)
+                        sparsity = np.mean(mask)
+                        covariance = np.mean((xi - mean_i) * (xj - mean_j))
+                        corr = covariance / (std_dev_i * std_dev_j)
+                        correlation_matrix[i, j] = corr * sparsity
+
+                    else:
+                        correlation_matrix[i, j] = np.nan  # Set to NaN if no variation
+
+                else:
+                    correlation_matrix[i, j] = (
+                        np.nan
+                    )  # Set to NaN if not enough data points
+
+        np.fill_diagonal(correlation_matrix, np.nan)
+
+        return correlation_matrix
