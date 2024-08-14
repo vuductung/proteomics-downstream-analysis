@@ -107,7 +107,9 @@ class ContaminationAnalysis:
         groups = data.select_dtypes(float).columns.unique()
         len_groups = len(groups)
         fig, ax = plt.subplots(1, len_groups, figsize=figsize)
-
+        if kind == "contamination":
+            fig.suptitle(contam_type)
+            
         if kind == "zscore":
             output = [self._compute_zscore_outliers(data[i])[1:3] for i in groups]
 
@@ -131,7 +133,7 @@ class ContaminationAnalysis:
                 )
 
                 axes.set_title(f"{group}")
-                axes.set_ylabel("outlier frequency")
+                axes.set_ylabel("outlier\nfrequency")
                 axes.set_xticks([])
                 axes.axhline(y=upper_lim, color="red", linestyle="--")
 
@@ -157,7 +159,7 @@ class ContaminationAnalysis:
         protein_outliers = self._number_of_protein_outliers(robust_zscores)
 
         # get the upper limit (boxplot)
-        upper_lim = self._upper_limit(protein_outliers)
+        upper_lim = self._calc_limit(protein_outliers)
 
         # get the mask to filter outliers
         outlier_mask = self._get_outlier_mask(upper_lim, protein_outliers)
@@ -171,13 +173,21 @@ class ContaminationAnalysis:
         # calculate rbc to total protein ratio
         rbc_total_ratio = self._compute_rbc_total_ratio(data, contam_type)
 
-        # get the upper limit (boxplot)
-        upper_lim = self._upper_limit(rbc_total_ratio)
+        if ("UP" in contam_type) | ("RBC" in contam_type) | ("Platelet" in contam_type):
+            # get the upper limit (boxplot)
+            limit = self._calc_limit(rbc_total_ratio, up=True)
 
-        # get the mask to filter outliers
-        mask = self._get_outlier_mask(upper_lim, rbc_total_ratio)
+            # get the mask to filter outliers
+            mask = self._get_outlier_mask(limit, rbc_total_ratio)
 
-        return rbc_total_ratio, upper_lim, mask
+        elif "Down" in contam_type:
+            # get the lower limit (boxplot)
+            limit = self._calc_limit(rbc_total_ratio, up=False)
+
+            # get the mask to filter outliers
+            mask = self._get_outlier_mask(limit, rbc_total_ratio, up=False)
+
+        return rbc_total_ratio, limit, mask
     
     def _compute_missing_values_outlier(self, data):
         # sort data
@@ -187,12 +197,12 @@ class ContaminationAnalysis:
         nan_values = self._count_missing_values(data)
 
         # get the upper limit (boxplot)
-        upper_lim = self._upper_limit(nan_values)
+        limit = self._calc_limit(nan_values)
 
         # get the mask to filter outliers
-        mask = self._get_outlier_mask(upper_lim, nan_values)
+        mask = self._get_outlier_mask(limit, nan_values)
 
-        return nan_values, upper_lim, mask
+        return nan_values, limit, mask
 
     def _sort_by_column_names(self, data, id_data=None, col_name=None):
 
@@ -231,14 +241,19 @@ class ContaminationAnalysis:
         protein_outliers = (np.abs(array) > 3.5).sum(axis=0)
         return protein_outliers.values
 
-    def _upper_limit(self, protein_outliers):
+    def _calc_limit(self, protein_outliers, up=True):
         # compute the upper limit for outliers
         q1 = np.percentile(protein_outliers, 25)
         q3 = np.percentile(protein_outliers, 75)
         iqr = q3 - q1
-        upper_lim = q3 + 3 * iqr
 
-        return upper_lim
+        if up:
+            limit = q3 + 3 * iqr
+
+        else:
+            limit = q1 - 3 * iqr
+
+        return limit
     
     def _compute_rbc_total_ratio(self, data, contam_type="RBC"):
         # calculat the RBC to total protein ratio
@@ -249,11 +264,15 @@ class ContaminationAnalysis:
 
         return rbc_total_ratio.values
 
-    def _get_outlier_mask(self, upper_lim, protein_outliers):
-        # get the mask to filter outliers
-        mask = protein_outliers >= upper_lim
+    def _get_outlier_mask(self, limit, protein_outliers, up=True):
 
-        return mask
+        if up:
+            outlier_mask = protein_outliers >= limit
+        
+        else:
+            outlier_mask = protein_outliers <= limit
+
+        return outlier_mask
     
     def _count_missing_values(self, data):
 
