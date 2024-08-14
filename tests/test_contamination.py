@@ -102,6 +102,34 @@ class TestContamination(unittest.TestCase):
         self.data6["b"] = self.data6["b"].astype("float")
         self.data6["Genes"] = self.data6["Genes"].astype("string")
 
+
+        self.data7 = pd.DataFrame({"Genes" : np.array(["FGB", "CLU", "SERPINA5", "d", "CDH5", "PPBP", "LTF"]),
+                    "b" : np.array([0.0005, 0.0005, 0.0005, 41231, 51123, 11120, 72123]),
+                    "c" : np.array([2029, 3212, 2329, 2325, 8, 7, 4]),
+                    "e" : np.array([32232, 24133, 11342, 1, 5, 8, 2]),
+                    "f" : np.array([2394, 1023, 3434, 4, 3, 1, 7]),
+                    "g" : np.array([415322, 112323, 82332, 2, 1, 3, 2]),
+                    "h" : np.array([133224, 12453, 11323, 4, 2, 3, 1]),
+                    "i" : np.array([12452, 1023, 8542, 2, 2, 6, 1]),
+                    "j" : np.array([13234, 23342, 32333, 3, 1, 3, 1]),
+                    }
+        )
+        
+        self.data7.columns = ["Genes", "a", "a", "a", "a", "b", "a", "a", "b"]
+        self.data7["a"] = self.data7["a"].astype("float")
+        self.data7["b"] = self.data7["b"].astype("float")
+        self.data7["Genes"] = self.data7["Genes"].astype("string")
+
+    def test_outlier_with_coagulation_down(self):
+        output = self.helper.outlier(self.data7, kind="contamination", remove=True, contam_type='Coagulation_Down')
+        expected_result = self.data7.set_index("Genes").iloc[:, 1:]
+        pd.testing.assert_frame_equal(output, expected_result)
+
+    def test_outlier_with_coagulation_up(self):
+        output = self.helper.outlier(self.data7, remove=True, contam_type='Coagulation_UP')
+        expected_result = self.data7.set_index("Genes").iloc[:, [0, 2, 3, 4, 5, 6, 7]]
+        pd.testing.assert_frame_equal(output, expected_result)
+
     def test_resort_by_column_names(self):
         output = self.helper._sort_by_column_names(data=self.data5)
         indices = self.helper.from_sorted_to_orig_indices
@@ -174,7 +202,7 @@ class TestContamination(unittest.TestCase):
         self.assertTrue((result == expected_result).all())
 
     def test_upper_limit(self):
-        upper_lim = self.helper._upper_limit(np.arange(10))
+        upper_lim = self.helper._calc_limit(np.arange(10))
         assert upper_lim == approx(20.25)
 
     def test_number_of_protein_outliers(self):
