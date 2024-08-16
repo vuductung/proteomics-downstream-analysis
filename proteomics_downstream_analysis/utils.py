@@ -40,3 +40,17 @@ def intersection_of_list_of_lists(list_of_lists):
 def wrap_labels(text, width):
     return textwrap.fill(text, width)
 
+def add_suffixes(original_list):
+    result = []
+    counts = {}
+    
+    for item in original_list:
+        if item in counts:
+            counts[item] += 1
+            result.append(f"{item}_{counts[item]}")
+        else:
+            counts[item] = 0
+            result.append(item)
+    
+    return result
+
