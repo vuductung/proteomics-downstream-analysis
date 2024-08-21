@@ -9,20 +9,20 @@ import pandas as pd
 from tqdm import tqdm
 from joblib import Parallel, delayed
 
-class MachineLearning:
 
+class MachineLearning:
     """
     Machine Learning methods
     """
+
     def __init__(self):
         self.scorings = ["roc_auc", "accuracy", "precision", "recall", "f1"]
 
     def plot_confusion_matrix(self, predicted_labels_list, y_test_list, figsize=(2, 2)):
-
         """
         This function prints and plots the confusion matrix.
         """
-        
+
         cnf_matrix = confusion_matrix(y_test_list, predicted_labels_list)
         np.set_printoptions(precision=2)
 
@@ -58,7 +58,7 @@ class MachineLearning:
         plt.xlabel("Predicted label")
 
         return cnf_matrix
-    
+
     def cross_validate_w_no_of_features(self, model, cv, x_train, y_train, scorings):
         """
         This method is used to cross validate the model with different number of features.
@@ -88,62 +88,77 @@ class MachineLearning:
 
         for scoring in scorings:
             print(f"Scoring: {scoring}")
-            
+
             results = Parallel(n_jobs=n_jobs)(
-                delayed(self._incrementally_add_one_feature_for_cross_val)(idx, model, x_train, y_train, cv, scoring)
+                delayed(self._incrementally_add_one_feature_for_cross_val)(
+                    idx, model, x_train, y_train, cv, scoring
+                )
                 for idx in tqdm(range(1, x_train.shape[1] + 1))
             )
-            
-            results_w_diff_scores.append({
-                'scoring': scoring,
-                'results': results
-            })
 
-        results = self._collect_data_from_no_of_feat_cvs(results_w_diff_scores, scorings)
+            results_w_diff_scores.append({"scoring": scoring, "results": results})
+
+        results = self._collect_data_from_no_of_feat_cvs(
+            results_w_diff_scores, scorings
+        )
         return results
 
-    
-    def _incrementally_add_one_feature_for_cross_val(self, idx, model, x_train, y_train, cv, scoring):
-        
+    def _incrementally_add_one_feature_for_cross_val(
+        self, idx, model, x_train, y_train, cv, scoring
+    ):
         result = cross_validate(
-                                estimator=model,
-                                X=x_train[:, :idx],
-                                y=y_train,
-                                cv=cv,
-                                scoring=scoring,
-                                return_train_score=True
-                            )
+            estimator=model,
+            X=x_train[:, :idx],
+            y=y_train,
+            cv=cv,
+            scoring=scoring,
+            return_train_score=True,
+        )
         return {
-            'n_features': idx,
-            'train_score_mean': np.mean(result['train_score']),
-            'test_score_mean': np.mean(result['test_score']),
-            'train_score_std': np.std(result['train_score']),
-            'test_score_std': np.std(result['test_score']),
+            "n_features": idx,
+            "train_score_mean": np.mean(result["train_score"]),
+            "test_score_mean": np.mean(result["test_score"]),
+            "train_score_std": np.std(result["train_score"]),
+            "test_score_std": np.std(result["test_score"]),
         }
-    
+
     def calculate_combined_scores(self, train_roc_aucs, test_roc_aucs):
         scores = {}
-        
+
         # Normalized Difference Score
-        norm_diff = [test * (1 - (train - test) / train) for train, test in zip(train_roc_aucs, test_roc_aucs)]
-        scores['normalized_difference'] = norm_diff
-        
+        norm_diff = [
+            test * (1 - (train - test) / train)
+            for train, test in zip(train_roc_aucs, test_roc_aucs)
+        ]
+        scores["normalized_difference"] = norm_diff
+
         # F1-like Score
-        overfitting = [train - test for train, test in zip(train_roc_aucs, test_roc_aucs)]
+        overfitting = [
+            train - test for train, test in zip(train_roc_aucs, test_roc_aucs)
+        ]
         non_overfitting = [1 - o for o in overfitting]
-        f1_like = [2 * (test * non_over) / (test + non_over) for test, non_over in zip(test_roc_aucs, non_overfitting)]
-        scores['f1_like'] = f1_like
-        
+        f1_like = [
+            2 * (test * non_over) / (test + non_over)
+            for test, non_over in zip(test_roc_aucs, non_overfitting)
+        ]
+        scores["f1_like"] = f1_like
+
         # Area Under the Margin
-        aum = np.trapz(y=np.array(train_roc_aucs) - np.array(test_roc_aucs), x=range(1, len(train_roc_aucs) + 1))
+        aum = np.trapz(
+            y=np.array(train_roc_aucs) - np.array(test_roc_aucs),
+            x=range(1, len(train_roc_aucs) + 1),
+        )
         aum_score = [test - (aum / len(train_roc_aucs)) for test in test_roc_aucs]
-        scores['area_under_margin'] = aum_score
+        scores["area_under_margin"] = aum_score
 
         return scores
 
     def _collect_data_from_no_of_feat_cvs(self, datasets, scorings):
-        return {score: pd.DataFrame(data["results"]) for data, score in zip(datasets, scorings)}
-    
+        return {
+            score: pd.DataFrame(data["results"])
+            for data, score in zip(datasets, scorings)
+        }
+
     def plot_no_of_feat_cv_results(self, results):
         """
         Plot the results of cross validation
@@ -157,24 +172,40 @@ class MachineLearning:
         for key in results.keys():
             data_to_plot = results[key]
             plt.figure(figsize=(2, 2))
-            plt.plot(data_to_plot["n_features"], data_to_plot["train_score_mean"], label="Train")
-            plt.fill_between(data_to_plot["n_features"].values,
-                            data_to_plot["train_score_mean"].values - data_to_plot["train_score_std"].values,
-                            data_to_plot["train_score_mean"].values + data_to_plot["train_score_std"].values,
-                            alpha=0.2)
-            
-            plt.plot(data_to_plot["n_features"], data_to_plot["test_score_mean"], label="Test")
-            plt.fill_between(data_to_plot["n_features"].values,
-                            data_to_plot["test_score_mean"].values - data_to_plot["test_score_std"].values,
-                            data_to_plot["test_score_mean"].values + data_to_plot["test_score_std"].values,
-                            alpha=0.2)
-                            
+            plt.plot(
+                data_to_plot["n_features"],
+                data_to_plot["train_score_mean"],
+                label="Train",
+            )
+            plt.fill_between(
+                data_to_plot["n_features"].values,
+                data_to_plot["train_score_mean"].values
+                - data_to_plot["train_score_std"].values,
+                data_to_plot["train_score_mean"].values
+                + data_to_plot["train_score_std"].values,
+                alpha=0.2,
+            )
+
+            plt.plot(
+                data_to_plot["n_features"],
+                data_to_plot["test_score_mean"],
+                label="Test",
+            )
+            plt.fill_between(
+                data_to_plot["n_features"].values,
+                data_to_plot["test_score_mean"].values
+                - data_to_plot["test_score_std"].values,
+                data_to_plot["test_score_mean"].values
+                + data_to_plot["test_score_std"].values,
+                alpha=0.2,
+            )
+
             plt.xlabel("Number of features")
             plt.ylabel(key)
             plt.ylim(0.5, 1)
             plt.legend()
             plt.show()
-    
+
     def group_proteins_by_value(self, protein_dict):
         grouped = {}
         for protein, value in protein_dict.items():
@@ -184,10 +215,14 @@ class MachineLearning:
         return grouped
 
     def get_feature_importance(self, model, X, y, n_repeats=10):
-        result = permutation_importance(model, X, y, n_repeats=n_repeats, random_state=42)
+        result = permutation_importance(
+            model, X, y, n_repeats=n_repeats, random_state=42
+        )
         return result.importances_mean
-    
-    def align_two_dataframes_based_on_gene_names(self, data1, data2, selected_features_mask):
+
+    def align_two_dataframes_based_on_gene_names(
+        self, data1, data2, selected_features_mask
+    ):
         """This method aligns two dataframes based on common Gene names.
         data1 represents the train data while data2 the test data. Before
         alignment a selected_feature_mask has to be created. The idea behind
@@ -208,16 +243,22 @@ class MachineLearning:
         -------
         pd.DataFrame
             train and test data aligned based on common Gene names.
-        """        
+        """
         selected_genes = data1[selected_features_mask]["Genes"].tolist()
 
         data2_filt_by_selected_genes = data2[data2["Genes"].isin(selected_genes)]
-        data2_filt_by_selected_genes = data2_filt_by_selected_genes.groupby("Genes").mean()
+        data2_filt_by_selected_genes = data2_filt_by_selected_genes.groupby(
+            "Genes"
+        ).mean()
         data2_filt_by_selected_genes = data2_filt_by_selected_genes.sort_index()
 
         data1_data2_intersec_proteins = data2_filt_by_selected_genes.index.values
 
-        data1_filt_by_selected_genes = data1[data1["Genes"].isin(data1_data2_intersec_proteins)].groupby("Genes").mean()
+        data1_filt_by_selected_genes = (
+            data1[data1["Genes"].isin(data1_data2_intersec_proteins)]
+            .groupby("Genes")
+            .mean()
+        )
         data1_filt_by_selected_genes = data1_filt_by_selected_genes.sort_index()
 
         return data2_filt_by_selected_genes, data1_filt_by_selected_genes
