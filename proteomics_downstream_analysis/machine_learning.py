@@ -244,21 +244,27 @@ class MachineLearning:
         pd.DataFrame
             train and test data aligned based on common Gene names.
         """
+
+        # collect the gene names that were selected
         selected_genes = data1[selected_features_mask]["Genes"].tolist()
 
+        # filter data2 by selected_genes and calc the mean for duplicates
+        # and sort them so that data1 has the same order of features
         data2_filt_by_selected_genes = data2[data2["Genes"].isin(selected_genes)]
         data2_filt_by_selected_genes = data2_filt_by_selected_genes.groupby(
             "Genes"
         ).mean()
         data2_filt_by_selected_genes = data2_filt_by_selected_genes.sort_index()
 
+        # collect the intersecting gene names between data1 and data2
         data1_data2_intersec_proteins = data2_filt_by_selected_genes.index.values
 
-        data1_filt_by_selected_genes = (
-            data1[data1["Genes"].isin(data1_data2_intersec_proteins)]
-            .groupby("Genes")
-            .mean()
-        )
+        # filter data2 by selected_genes and calc the mean for duplicates
+        # and sort them so that data1 has the same order of features
+        data1_filt_by_selected_genes = data1[data1["Genes"].isin(data1_data2_intersec_proteins)]
+        data1_filt_by_selected_genes = data1_filt_by_selected_genes.groupby(
+            "Genes"
+        ).mean()
         data1_filt_by_selected_genes = data1_filt_by_selected_genes.sort_index()
 
-        return data2_filt_by_selected_genes, data1_filt_by_selected_genes
+        return data1_filt_by_selected_genes, data2_filt_by_selected_genes
