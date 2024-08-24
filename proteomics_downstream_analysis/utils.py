@@ -54,3 +54,17 @@ def add_suffixes(original_list):
     
     return result
 
+def filter_dict_by_key_content(dictionary, substring):
+    """
+    Filter a dictionary to keep only key-value pairs where the key contains a specific substring.
+    
+    Args:
+    dictionary (dict): The input dictionary to filter.
+    substring (str): The substring to search for in the keys.
+    
+    Returns:
+    dict: A new dictionary containing only the key-value pairs where the key contains the substring.
+    """
+    return {key: value for key, value in dictionary.items() if substring in key}
+
+
