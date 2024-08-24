@@ -159,7 +159,7 @@ class MachineLearning:
             for data, score in zip(datasets, scorings)
         }
 
-    def plot_no_of_feat_cv_results(self, results):
+    def plot_no_of_feat_cv_results(self, results, path=None):
         """
         Plot the results of cross validation
         with different number of features.
@@ -189,7 +189,7 @@ class MachineLearning:
             plt.plot(
                 data_to_plot["n_features"],
                 data_to_plot["test_score_mean"],
-                label="Test",
+                label="Val",
             )
             plt.fill_between(
                 data_to_plot["n_features"].values,
@@ -202,8 +202,10 @@ class MachineLearning:
 
             plt.xlabel("Number of features")
             plt.ylabel(key)
-            plt.ylim(0.5, 1)
+            # plt.ylim(0.5, 1)
             plt.legend()
+            if path:
+                plt.savefig(f"{path}/{key}.pdf", bbox_inches="tight", transparent=True)
             plt.show()
 
     def group_proteins_by_value(self, protein_dict):
