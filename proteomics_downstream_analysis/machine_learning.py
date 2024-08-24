@@ -4,10 +4,13 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import cross_validate
 from sklearn.inspection import permutation_importance
+from sklearn.preprocessing import StandardScaler
+from scipy import stats
 
 import pandas as pd
 from tqdm import tqdm
 from joblib import Parallel, delayed
+from numpy.linalg import LinAlgError
 
 
 class MachineLearning:
@@ -270,3 +273,96 @@ class MachineLearning:
         data1_filt_by_selected_genes = data1_filt_by_selected_genes.sort_index()
 
         return data1_filt_by_selected_genes, data2_filt_by_selected_genes
+
+
+    def regressorstats(self, X, y, lm, missing=False):
+        """
+        Perform regression analysis and return statistics.
+
+        Parameters:
+        X (numpy.ndarray): Input features
+        y (numpy.ndarray): Target values
+        lm: Linear model object with fit and predict methods
+        missing (bool): Whether to handle missing values
+
+        Returns:
+        pandas.DataFrame or None: Regression statistics or None if insufficient data
+        """
+        if missing:
+            mask = np.isfinite(X.ravel()) & np.isfinite(y.ravel())
+            X = X[mask]
+            y = y[mask]
+
+        if len(y) == 0:
+            return None
+            
+        try:
+            lm.fit(X, y)
+        except Exception as e:
+            print(f"Error fitting the model: {e}")
+            return None
+
+        params = np.append(lm.intercept_, lm.coef_)
+        predictions = lm.predict(X)
+        
+        n, p = X.shape[0], X.shape[1] + 1  # n: number of samples, p: number of parameters including intercept
+        x_with_intercept = np.column_stack((np.ones(n), X))
+        
+        mse = np.sum((y - predictions)**2) / (n - p)
+
+        try:
+            var_b = mse * np.linalg.inv(x_with_intercept.T @ x_with_intercept).diagonal()
+            sd_b = np.sqrt(var_b)
+            ts_b = params / sd_b
+            p_values = 2 * (1 - stats.t.cdf(np.abs(ts_b), (n - p)))
+
+        except LinAlgError:
+            print("Error: Singular matrix encountered. Unable to calculate standard errors and p-values.")
+            sd_b = ts_b = p_values = np.full_like(params, np.nan)
+
+        stats_data = pd.DataFrame({
+            "Coefficients": params,
+            "Standard Errors": sd_b,
+            "t values": ts_b,
+            "p-values": p_values
+        })
+
+        return stats_data
+
+    def _process_protein_pair(self, pair, protein_data, lm):
+        prot_a, prot_b = pair
+        
+        X = StandardScaler().fit_transform(protein_data[prot_a].values.reshape(-1, 1))
+        y = protein_data[prot_b].values.reshape(-1, 1)
+        stats_data = self.regressorstats(X, y, lm, missing=True)
+        if stats_data is not None:
+            return (
+                f"{prot_a}_{prot_b}",
+                stats_data["Coefficients"].values[-1],
+                stats_data["p-values"].values[-1]
+            )
+        return None
+
+    def parallel_protein_analysis(self, protein_data, lm, n_jobs=-1, verbose=10):
+
+        """
+        Parallel processing for generating protein-protein interaction networks.
+        """
+
+        protein_pairs = list(itertools.combinations(protein_data.index, 2))
+        protein_data_transp = protein_data.T
+
+        results = Parallel(n_jobs=n_jobs, verbose=verbose)(
+            delayed(self._process_protein_pair)(pair, protein_data_transp, lm)
+            for pair in protein_pairs
+        )
+
+        ntwrk_coef = {}
+        ntwrk_pval = {}
+        for result in results:
+            if result is not None:
+                pair_name, coef, pval = result
+                ntwrk_coef[pair_name] = coef
+                ntwrk_pval[pair_name] = pval
+
+        return ntwrk_coef, ntwrk_pval
