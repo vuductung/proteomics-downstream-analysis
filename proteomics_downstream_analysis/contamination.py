@@ -24,7 +24,7 @@ class ContaminationAnalysis:
         self.from_orig_to_sorted_indices = None
         self.from_sorted_to_orig_indices = None
 
-    def outlier(self, data, kind="zscore", remove=False, contam_type="RBC"):
+    def outlier(self, data, kind="zscore", remove=False, contam_type="RBC", iqr_multiplier=3):
         """
         docstring
         An outlier algorithm using the z-score and the IQR to detect outliers
@@ -72,17 +72,17 @@ class ContaminationAnalysis:
 
         for i in columns:
             if kind == "zscore":
-                outlier_mask = self._compute_zscore_outliers(sorted_data[i])[-1]
+                outlier_mask = self._compute_zscore_outliers(sorted_data[i], iqr_multiplier=iqr_multiplier)[-1]
                 outlier_master_mask = np.concatenate((outlier_master_mask, outlier_mask))
 
             elif kind == "contamination":
                 outlier_mask = self._compute_contamination_outlier(
-                    sorted_data[["Genes", i]], contam_type
+                    sorted_data[["Genes", i]], contam_type, iqr_multiplier=iqr_multiplier
                 )[-1]
                 outlier_master_mask = np.concatenate((outlier_master_mask, outlier_mask))
 
             elif kind == "missing values":
-                outlier_mask = self._compute_missing_values_outlier(sorted_data[i])[-1]
+                outlier_mask = self._compute_missing_values_outlier(sorted_data[i], iqr_multiplier=iqr_multiplier)[-1]
                 outlier_master_mask = np.concatenate((outlier_master_mask, outlier_mask))
 
         _ = self._sort_by_column_names(data) # update from_sorted_to_orig_indices attribute
@@ -148,7 +148,7 @@ class ContaminationAnalysis:
         if filepath:
             fig.savefig(filepath, bbox_inches="tight", transparent=True)
             
-    def _compute_zscore_outliers(self, data):
+    def _compute_zscore_outliers(self, data, iqr_multiplier=3):
         # sort data
         data = self._sort_by_column_names(data)
 
@@ -159,14 +159,14 @@ class ContaminationAnalysis:
         protein_outliers = self._number_of_protein_outliers(robust_zscores)
 
         # get the upper limit (boxplot)
-        upper_lim = self._calc_limit(protein_outliers)
+        upper_lim = self._calc_limit(protein_outliers, iqr_multiplier=iqr_multiplier)
 
         # get the mask to filter outliers
         outlier_mask = self._get_outlier_mask(upper_lim, protein_outliers)
 
         return robust_zscores, protein_outliers, upper_lim, outlier_mask
     
-    def _compute_contamination_outlier(self, data, contam_type="RBC"):
+    def _compute_contamination_outlier(self, data, contam_type="RBC", iqr_multiplier=3):
         # sort data
         data = self._sort_by_column_names(data)
 
@@ -175,21 +175,21 @@ class ContaminationAnalysis:
 
         if ("UP" in contam_type) | ("RBC" in contam_type) | ("Platelet" in contam_type):
             # get the upper limit (boxplot)
-            limit = self._calc_limit(rbc_total_ratio, up=True)
+            limit = self._calc_limit(rbc_total_ratio, up=True, iqr_multiplier=iqr_multiplier)
 
             # get the mask to filter outliers
             mask = self._get_outlier_mask(limit, rbc_total_ratio)
 
         elif "Down" in contam_type:
             # get the lower limit (boxplot)
-            limit = self._calc_limit(rbc_total_ratio, up=False)
+            limit = self._calc_limit(rbc_total_ratio, up=False, iqr_multiplier=iqr_multiplier)
 
             # get the mask to filter outliers
             mask = self._get_outlier_mask(limit, rbc_total_ratio, up=False)
 
         return rbc_total_ratio, limit, mask
     
-    def _compute_missing_values_outlier(self, data):
+    def _compute_missing_values_outlier(self, data, iqr_multiplier=3):
         # sort data
         data = self._sort_by_column_names(data)
 
@@ -197,7 +197,7 @@ class ContaminationAnalysis:
         nan_values = self._count_missing_values(data)
 
         # get the upper limit (boxplot)
-        limit = self._calc_limit(nan_values)
+        limit = self._calc_limit(nan_values, iqr_multiplier=iqr_multiplier)
 
         # get the mask to filter outliers
         mask = self._get_outlier_mask(limit, nan_values)
@@ -241,17 +241,17 @@ class ContaminationAnalysis:
         protein_outliers = (np.abs(array) > 3.5).sum(axis=0)
         return protein_outliers.values
 
-    def _calc_limit(self, protein_outliers, up=True):
+    def _calc_limit(self, protein_outliers, up=True, iqr_multiplier=3):
         # compute the upper limit for outliers
         q1 = np.percentile(protein_outliers, 25)
         q3 = np.percentile(protein_outliers, 75)
         iqr = q3 - q1
 
         if up:
-            limit = q3 + 3 * iqr
+            limit = q3 + iqr_multiplier * iqr
 
         else:
-            limit = q1 - 3 * iqr
+            limit = q1 - iqr_multiplier * iqr
 
         return limit
     
