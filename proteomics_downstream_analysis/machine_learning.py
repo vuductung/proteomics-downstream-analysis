@@ -5,6 +5,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import cross_validate
 from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error
 from scipy import stats
 
 import pandas as pd
@@ -12,6 +13,7 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 from numpy.linalg import LinAlgError
 
+import seaborn as sns
 
 class MachineLearning:
     """
@@ -175,24 +177,12 @@ class MachineLearning:
         for key in results.keys():
             data_to_plot = results[key]
             plt.figure(figsize=(2, 2))
-            plt.plot(
-                data_to_plot["n_features"],
-                data_to_plot["train_score_mean"],
-                label="Train",
-            )
-            plt.fill_between(
-                data_to_plot["n_features"].values,
-                data_to_plot["train_score_mean"].values
-                - data_to_plot["train_score_std"].values,
-                data_to_plot["train_score_mean"].values
-                + data_to_plot["train_score_std"].values,
-                alpha=0.2,
-            )
 
             plt.plot(
                 data_to_plot["n_features"],
                 data_to_plot["test_score_mean"],
                 label="Val",
+                color=sns.color_palette()[2]
             )
             plt.fill_between(
                 data_to_plot["n_features"].values,
@@ -201,6 +191,23 @@ class MachineLearning:
                 data_to_plot["test_score_mean"].values
                 + data_to_plot["test_score_std"].values,
                 alpha=0.2,
+                color=sns.color_palette()[2]
+            )
+
+            plt.plot(
+                data_to_plot["n_features"],
+                data_to_plot["train_score_mean"],
+                label="Train",
+                color=sns.color_palette()[1]
+            )
+            plt.fill_between(
+                data_to_plot["n_features"].values,
+                data_to_plot["train_score_mean"].values
+                - data_to_plot["train_score_std"].values,
+                data_to_plot["train_score_mean"].values
+                + data_to_plot["train_score_std"].values,
+                alpha=0.2,
+                color=sns.color_palette()[1]
             )
 
             plt.xlabel("Number of features")
@@ -294,6 +301,7 @@ class MachineLearning:
             y = y[mask]
 
         if len(y) == 0:
+            print(f"Not enought y datapoints")
             return None
             
         try:
@@ -302,6 +310,8 @@ class MachineLearning:
             print(f"Error fitting the model: {e}")
             return None
 
+        mse = mean_squared_error(y, lm.predict(X))
+        rsquare = lm.score(X, y)
         params = np.append(lm.intercept_, lm.coef_)
         predictions = lm.predict(X)
         
@@ -320,36 +330,60 @@ class MachineLearning:
             print("Error: Singular matrix encountered. Unable to calculate standard errors and p-values.")
             sd_b = ts_b = p_values = np.full_like(params, np.nan)
 
+        performance_data = pd.DataFrame(
+            {
+                "mse": [mse],
+                "R2": [rsquare],
+            },
+        )
+
         stats_data = pd.DataFrame({
             "Coefficients": params,
             "Standard Errors": sd_b,
             "t values": ts_b,
-            "p-values": p_values
+            "p-values": p_values,
         })
 
-        return stats_data
+        return stats_data, performance_data
 
     def _process_protein_pair(self, pair, protein_data, lm):
         prot_a, prot_b = pair
-        
+        # logging.info(f"Processing protein pair: {prot_a}, {prot_b}")
         X = StandardScaler().fit_transform(protein_data[prot_a].values.reshape(-1, 1))
         y = protein_data[prot_b].values.reshape(-1, 1)
-        stats_data = self.regressorstats(X, y, lm, missing=True)
-        if stats_data is not None:
+        result = self.regressorstats(X, y, lm, missing=True)
+        if result is not None:
+            stats_data, performance_data = result
+            # logging.info(f"Successfully processed protein pair: {prot_a}, {prot_b}")
             return (
                 f"{prot_a}_{prot_b}",
                 stats_data["Coefficients"].values[-1],
-                stats_data["p-values"].values[-1]
+                stats_data["p-values"].values[-1],
+                performance_data["mse"].values[-1],
+                performance_data["R2"].values[-1],
             )
+        # logging.warning(f"Failed to process protein pair: {prot_a}, {prot_b}")
         return None
 
-    def parallel_protein_analysis(self, protein_data, lm, n_jobs=-1, verbose=10):
+    def parallel_protein_analysis(self, protein_data, lm, n_jobs=-1, verbose=10, unique_pairs=True):
 
         """
+       
         Parallel processing for generating protein-protein interaction networks.
-        """
 
-        protein_pairs = list(itertools.combinations(protein_data.index, 2))
+        Returns
+        -------
+        dictionary
+            Dictionary containing the protein-protein interaction coefficient,
+            pvalue, mean squared error and R2 score.
+        """        
+
+        if unique_pairs:
+            protein_pairs = list(itertools.combinations(protein_data.index, 2))
+
+        else:
+            protein_pairs = list(itertools.permutations(protein_data.index, 2))
+
         protein_data_transp = protein_data.T
 
         results = Parallel(n_jobs=n_jobs, verbose=verbose)(
@@ -359,10 +393,15 @@ class MachineLearning:
 
         ntwrk_coef = {}
         ntwrk_pval = {}
+        ntwrk_mse = {}
+        ntwrk_r2 = {}
         for result in results:
             if result is not None:
-                pair_name, coef, pval = result
+                pair_name, coef, pval, mse, r2 = result
                 ntwrk_coef[pair_name] = coef
                 ntwrk_pval[pair_name] = pval
+                ntwrk_mse[pair_name] = mse
+                ntwrk_r2[pair_name] = r2
 
-        return ntwrk_coef, ntwrk_pval
+        return ntwrk_coef, ntwrk_pval, ntwrk_mse, ntwrk_r2
+    
