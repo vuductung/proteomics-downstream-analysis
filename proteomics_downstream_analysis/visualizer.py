@@ -36,7 +36,7 @@ class Visualizer:
         annot=None,
         gene_column="Genes",
         qvalue=True,
-        palette=sns.color_palette("deep", 20),
+        palette=None,
     ):
         """
         Plot a volcano plot.
@@ -73,71 +73,72 @@ class Visualizer:
 
         """
         fig, ax = plt.subplots(n_rows, n_cols, figsize=figsize, layout="tight")
-
+        if palette is None:
+            palette = sns.color_palette("coolwarm", 2)
         for i, axes in zip(
             fc_data.select_dtypes("float").columns, np.array(ax).flatten()
         ):
-            if qvalue is True:
-                if (qv_data[i] < 0.05).sum() == 0:
-                    sns.scatterplot(
-                        x=fc_data[(pv_data.select_dtypes("float") < 1.3)][i],
-                        y=pv_data[(pv_data.select_dtypes("float") < 1.3)][i],
-                        color="lightgrey",
-                        alpha=0.5,
-                        ax=axes,
-                        linewidth=0,
-                    )
+            if qvalue:
+                # if (qv_data[i] < 0.05).sum() == 0:
+                #     sns.scatterplot(
+                #         x=fc_data[(pv_data.select_dtypes("float") < 1.3)][i],
+                #         y=pv_data[(pv_data.select_dtypes("float") < 1.3)][i],
+                #         color="lightgrey",
+                #         alpha=0.5,
+                #         ax=axes,
+                #         linewidth=0,
+                #     )
 
-                    sns.scatterplot(
-                        x=fc_data[
-                            (pv_data.select_dtypes("float") > 1.3)
-                            & (fc_data.select_dtypes("float") < 0)
-                        ][i],
-                        y=pv_data[
-                            (pv_data.select_dtypes("float") > 1.3)
-                            & (fc_data.select_dtypes("float") < 0)
-                        ][i],
-                        color=palette[1],
-                        ax=axes,
-                        linewidth=0,
-                    )
+                #     sns.scatterplot(
+                #         x=fc_data[
+                #             (pv_data.select_dtypes("float") > 1.3)
+                #             & (fc_data.select_dtypes("float") < 0)
+                #         ][i],
+                #         y=pv_data[
+                #             (pv_data.select_dtypes("float") > 1.3)
+                #             & (fc_data.select_dtypes("float") < 0)
+                #         ][i],
+                #         color=palette[1],
+                #         ax=axes,
+                #         linewidth=0,
+                #     )
 
-                    sns.scatterplot(
-                        x=fc_data[
-                            (pv_data.select_dtypes("float") > 1.3)
-                            & (fc_data.select_dtypes("float") > 0)
-                        ][i],
-                        y=pv_data[
-                            (pv_data.select_dtypes("float") > 1.3)
-                            & (fc_data.select_dtypes("float") > 0)
-                        ][i],
-                        color=palette[0],
-                        ax=axes,
-                        linewidth=0,
-                    )
+                #     sns.scatterplot(
+                #         x=fc_data[
+                #             (pv_data.select_dtypes("float") > 1.3)
+                #             & (fc_data.select_dtypes("float") > 0)
+                #         ][i],
+                #         y=pv_data[
+                #             (pv_data.select_dtypes("float") > 1.3)
+                #             & (fc_data.select_dtypes("float") > 0)
+                #         ][i],
+                #         color=palette[0],
+                #         ax=axes,
+                #         linewidth=0,
+                #     )
 
-                    axes.set_xlabel("log2 fold change", fontsize=10)
-                    axes.set_ylabel("-log10 p-value", fontsize=10)
+                #     axes.set_xlabel("log2 fold change", fontsize=10)
+                #     axes.set_ylabel("-log10 p-value", fontsize=10)
 
-                    # set p-value threshold
-                    axes.axhline(1.3, ls="--", color="lightgrey")
+                #     # set p-value threshold
+                #     axes.axhline(1.3, ls="--", color="lightgrey")
 
-                    if annot == "fc_cutoff":
-                        indices = fc_data[
-                            (
-                                (fc_data[i] < lower_fc_cutoff)
-                                | (fc_data[i] > upper_fc_cutoff)
-                            )
-                            & (pv_data[i] > 1.3)
-                        ].index
+                #     if annot == "fc_cutoff":
+                #         indices = fc_data[
+                #             (
+                #                 (fc_data[i] < lower_fc_cutoff)
+                #                 | (fc_data[i] > upper_fc_cutoff)
+                #             )
+                #             & (pv_data[i] > 1.3)
+                #         ].index
 
-                        axes.axvline(lower_fc_cutoff, ls="--", color="lightgrey")
-                        axes.axvline(upper_fc_cutoff, ls="--", color="lightgrey")
+                #         axes.axvline(lower_fc_cutoff, ls="--", color="lightgrey")
+                #         axes.axvline(upper_fc_cutoff, ls="--", color="lightgrey")
 
-                    else:
-                        indices = fc_data[fc_data[gene_column].isin(gene_list)].index
+                #     else:
+                #         indices = fc_data[fc_data[gene_column].isin(gene_list)].index
 
-                else:
+                # else:
                     # plot the non significant datapoints lightgrey
                     sns.scatterplot(
                         x=fc_data[qv_data.select_dtypes("float") > 0.05][i],
@@ -182,8 +183,9 @@ class Visualizer:
                     axes.set_ylabel("-log10 p-value", fontsize=10)
 
                     # set q-value threshold
-                    threshold = pv_data[qv_data[i] < 0.05][i].sort_values().values[0]
-                    axes.axhline(threshold, ls="--", color="lightgrey")
+                    if (qv_data[i] < 0.05).sum() > 0:
+                        threshold = pv_data[qv_data[i] < 0.05][i].sort_values().values[0]
+                        axes.axhline(threshold, ls="--", color="lightgrey")
 
                     if annot == "fc_cutoff":
                         indices = fc_data[
@@ -199,7 +201,7 @@ class Visualizer:
                     else:
                         indices = fc_data[fc_data[gene_column].isin(gene_list)].index
 
-            if qvalue is False:
+            else:
                 sns.scatterplot(
                     x=fc_data[i],
                     y=pv_data[i],
@@ -259,6 +261,10 @@ class Visualizer:
                 else:
                     indices = genes_indices.tolist()
 
+            sns.scatterplot(x=fc_data[i][indices],
+                            y=pv_data[i][indices],
+                            color='lightblue')
+
             # annotation
             if indices:
                 texts = [
@@ -280,22 +286,25 @@ class Visualizer:
                 pass
 
             sample_annot = i.split("/")
-            x1 = fc_data[i].max()
-            x2 = fc_data[i].min()
-            y = pv_data[i].max()
+            x_min = fc_data[i].min()
+            x_max = fc_data[i].max()
+            x1 = x_max/2
+            x2 = x_min/2
+
+            y = pv_data[i].max() - 0.5
 
             axes.text(
                 x1,
                 y,
                 sample_annot[0],
-                fontsize=12,
+                fontsize=10,
                 bbox=dict(boxstyle="round", fc="w", ec="black", alpha=0.3),
             )
             axes.text(
                 x2,
                 y,
                 sample_annot[1],
-                fontsize=12,
+                fontsize=10,
                 bbox=dict(boxstyle="round", fc="w", ec="black", alpha=0.3),
             )
 
