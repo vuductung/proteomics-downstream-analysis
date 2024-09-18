@@ -68,3 +68,13 @@ def filter_dict_by_key_content(dictionary, substring):
     return {key: value for key, value in dictionary.items() if substring in key}
 
 
+def add_suffixes_to_duplicates(df, column):
+
+    """add suffixes to columns with duplicate values"""
+    # Overwrite the column with suffixed values for duplicates
+    df[column] = (
+        df.groupby(column)[column]
+        .transform(lambda x: x + '_' + (x.groupby(x).cumcount() + 1).astype(str))
+        .mask(lambda x: ~x.duplicated(), df[column])
+    )
+    return df
