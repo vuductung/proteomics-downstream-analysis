@@ -90,10 +90,8 @@ class EnrichmentAnalysis:
         enr_data['Overlap in %'] = overlap
 
         # partition the term
-        enr_data['GO term ID'] = [i[1].split(')')[0]
-                                  for i in enr_data['Term'].str.split('(')]
+        enr_data['GO term ID'] = enr_data["Term"].str.split("(").str[0]
         enr_data['GO term ID'] = enr_data['GO term ID'].astype('string')
-        enr_data['Term'] = enr_data['Term'].str.partition(' (')[0]
 
         # filter the data by FDR
         enr_data = enr_data[enr_data['Adjusted P-value'] > 1.3]
@@ -114,7 +112,7 @@ class EnrichmentAnalysis:
             enr_data_filt = [enr_data[enr_data['Gene_set'] == i] for i in term]
         
         self.go_data = enr_data_filt.copy()
-        return enr_data_filt
+        return enr_data_filt, enr_data
     
 
     def plot_array_enrichment(self, go_data, figsize, top,
