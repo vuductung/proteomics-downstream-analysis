@@ -457,7 +457,7 @@ class DataQualityInformation:
 
         return data_depth
 
-    def calc_completeness(self, data, normalize=None):
+    def calc_completeness(self, data, normalize=None, per_exp_group=True):
         
         '''
         completeness = number of valid values in each feature
@@ -468,16 +468,24 @@ class DataQualityInformation:
         groups = float_data.columns.unique()
         data_completeness = pd.DataFrame()
 
-        if normalize is None:
-            for group in groups:    
-                data_completeness[group] = float_data[group].notnull().sum(axis=1)
-        
-        if normalize == 'percent':
-            for group in groups:
-                data_completeness[group] = float_data[group].notnull().mean(axis=1)
+        if per_exp_group:
+            if normalize is None:
+                for group in groups:    
+                    data_completeness[group] = float_data[group].notnull().sum(axis=1)
+            
+            if normalize == 'percent':
+                for group in groups:
+                    data_completeness[group] = float_data[group].notnull().mean(axis=1)
 
-        data_completeness = data_completeness.melt()
-        data_completeness.columns = ['groups', 'completeness']
+            data_completeness = data_completeness.melt()
+            data_completeness.columns = ['groups', 'completeness']
+
+        else:
+            if normalize is None:
+                data_completeness = float_data.notnull().sum(axis=1)
+            
+            if normalize == 'percent':
+                data_completeness = float_data.notnull().mean(axis=1)
 
         return  data_completeness
 
