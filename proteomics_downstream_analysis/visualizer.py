@@ -72,77 +72,29 @@ class Visualizer:
         -------
 
         """
+
         fig, ax = plt.subplots(n_rows, n_cols, figsize=figsize, layout="tight")
+
+        cols = fc_data.select_dtypes("float").columns
+        axs = np.array(ax).flatten()
+        indices = False
         if palette is None:
             palette = sns.color_palette("coolwarm", 2)
         for i, axes in zip(
-            fc_data.select_dtypes("float").columns, np.array(ax).flatten()
+            cols, axs
         ):
+            
+            qv_mask = qv_data[i].isna()
+            fc_mask = fc_data[i].isna()
+            pv_mask = pv_data[i].isna()
+            mask = ~(qv_mask | fc_mask | pv_mask)
+
             if qvalue:
-                # if (qv_data[i] < 0.05).sum() == 0:
-                #     sns.scatterplot(
-                #         x=fc_data[(pv_data.select_dtypes("float") < 1.3)][i],
-                #         y=pv_data[(pv_data.select_dtypes("float") < 1.3)][i],
-                #         color="lightgrey",
-                #         alpha=0.5,
-                #         ax=axes,
-                #         linewidth=0,
-                #     )
-
-                #     sns.scatterplot(
-                #         x=fc_data[
-                #             (pv_data.select_dtypes("float") > 1.3)
-                #             & (fc_data.select_dtypes("float") < 0)
-                #         ][i],
-                #         y=pv_data[
-                #             (pv_data.select_dtypes("float") > 1.3)
-                #             & (fc_data.select_dtypes("float") < 0)
-                #         ][i],
-                #         color=palette[1],
-                #         ax=axes,
-                #         linewidth=0,
-                #     )
-
-                #     sns.scatterplot(
-                #         x=fc_data[
-                #             (pv_data.select_dtypes("float") > 1.3)
-                #             & (fc_data.select_dtypes("float") > 0)
-                #         ][i],
-                #         y=pv_data[
-                #             (pv_data.select_dtypes("float") > 1.3)
-                #             & (fc_data.select_dtypes("float") > 0)
-                #         ][i],
-                #         color=palette[0],
-                #         ax=axes,
-                #         linewidth=0,
-                #     )
-
-                #     axes.set_xlabel("log2 fold change", fontsize=10)
-                #     axes.set_ylabel("-log10 p-value", fontsize=10)
-
-                #     # set p-value threshold
-                #     axes.axhline(1.3, ls="--", color="lightgrey")
-
-                #     if annot == "fc_cutoff":
-                #         indices = fc_data[
-                #             (
-                #                 (fc_data[i] < lower_fc_cutoff)
-                #                 | (fc_data[i] > upper_fc_cutoff)
-                #             )
-                #             & (pv_data[i] > 1.3)
-                #         ].index
-
-                #         axes.axvline(lower_fc_cutoff, ls="--", color="lightgrey")
-                #         axes.axvline(upper_fc_cutoff, ls="--", color="lightgrey")
-
-                #     else:
-                #         indices = fc_data[fc_data[gene_column].isin(gene_list)].index
-
-                # else:
                     # plot the non significant datapoints lightgrey
+                    non_sign_mask = qv_data[i] > 0.05
                     sns.scatterplot(
-                        x=fc_data[qv_data.select_dtypes("float") > 0.05][i],
-                        y=pv_data[qv_data.select_dtypes("float") > 0.05][i],
+                        x=fc_data[non_sign_mask & mask][i],
+                        y=pv_data[non_sign_mask & mask][i],
                         color="lightgrey",
                         alpha=0.5,
                         ax=axes,
@@ -150,14 +102,14 @@ class Visualizer:
                     )
 
                     # plot the significant datapoints with pos fold change
+                    sign_mask = qv_data[i]  < 0.05
+                    pos_fc_mask =  fc_data[i] > 0
                     sns.scatterplot(
                         x=fc_data[
-                            (qv_data.select_dtypes("float") < 0.05)
-                            & (fc_data.select_dtypes("float") < 0)
+                            sign_mask & pos_fc_mask & mask
                         ][i],
                         y=pv_data[
-                            (qv_data.select_dtypes("float") < 0.05)
-                            & (fc_data.select_dtypes("float") < 0)
+                           sign_mask & pos_fc_mask & mask
                         ][i],
                         color=palette[1],
                         ax=axes,
@@ -165,14 +117,13 @@ class Visualizer:
                     )
 
                     # plot the significant datapoints with neg fold change
+                    neg_fc_mask =  fc_data[i] < 0
                     sns.scatterplot(
                         x=fc_data[
-                            (qv_data.select_dtypes("float") < 0.05)
-                            & (fc_data.select_dtypes("float") > 0)
+                           sign_mask & neg_fc_mask * mask
                         ][i],
                         y=pv_data[
-                            (qv_data.select_dtypes("float") < 0.05)
-                            & (fc_data.select_dtypes("float") > 0)
+                            sign_mask & neg_fc_mask * mask
                         ][i],
                         color=palette[0],
                         ax=axes,
@@ -183,7 +134,7 @@ class Visualizer:
                     axes.set_ylabel("-log10 p-value", fontsize=10)
 
                     # set q-value threshold
-                    if (qv_data[i] < 0.05).sum() > 0:
+                    if sign_mask.sum() > 0:
                         threshold = pv_data[qv_data[i] < 0.05][i].sort_values().values[0]
                         axes.axhline(threshold, ls="--", color="lightgrey")
 
@@ -192,39 +143,47 @@ class Visualizer:
                             (
                                 (fc_data[i] < lower_fc_cutoff)
                                 | (fc_data[i] > upper_fc_cutoff)
+                                | (fc_data["Genes"].isin(gene_list))
                             )
-                            & (qv_data[i] < 0.05)
+                            & sign_mask & mask
                         ].index
                         axes.axvline(lower_fc_cutoff, ls="--", color="lightgrey")
                         axes.axvline(upper_fc_cutoff, ls="--", color="lightgrey")
 
                     else:
-                        indices = fc_data[fc_data[gene_column].isin(gene_list)].index
+                        annot_mask = fc_data[gene_column].isin(gene_list)
+                        indices = fc_data[annot_mask & mask].index
 
             else:
+                # plot all non significant datapoints
+                non_sign_mask = pv_data[i] < 1.3
                 sns.scatterplot(
-                    x=fc_data[i],
-                    y=pv_data[i],
+                    x=fc_data[i][non_sign_mask & mask],
+                    y=pv_data[i][non_sign_mask & mask],
                     color="lightgrey",
                     alpha=0.5,
                     ax=axes,
                     linewidth=0,
                 )
+                # plot all significant datapoints with pos fold change
+                sign_mask = pv_data[i] > 1.3
+                pos_fc_mask = fc_data[i] > 0
                 sns.scatterplot(
-                    x=fc_data[pv_data.select_dtypes("float") > 1.3][i],
-                    y=pv_data[pv_data.select_dtypes("float") > 1.3][i],
+                    x=fc_data[sign_mask & mask & pos_fc_mask][i],
+                    y=pv_data[sign_mask & mask & pos_fc_mask][i],
                     color=palette[0],
                     ax=axes,
                     linewidth=0,
                 )
+
+                # plot all significant datapoints with neg fold change
+                neg_fc_mask = fc_data[i] < 0
                 sns.scatterplot(
                     x=fc_data[
-                        (pv_data.select_dtypes("float") > 1.3)
-                        & (fc_data.select_dtypes("float") < 0)
+                       sign_mask & mask & neg_fc_mask
                     ][i],
                     y=pv_data[
-                        (pv_data.select_dtypes("float") > 1.3)
-                        & (fc_data.select_dtypes("float") < 0)
+                       sign_mask & mask & neg_fc_mask
                     ][i],
                     color=palette[1],
                     ax=axes,
@@ -244,29 +203,22 @@ class Visualizer:
                             | (fc_data[i] > upper_fc_cutoff)
                             | (fc_data["Genes"].isin(gene_list))
                         )
-                        & (pv_data[i] > 1.3)
+                        & sign_mask & mask
                     ].index
                     axes.axvline(lower_fc_cutoff, ls="--", color="lightgrey")
                     axes.axvline(upper_fc_cutoff, ls="--", color="lightgrey")
 
                 else:
-                    indices = fc_data[fc_data[gene_column].isin(gene_list)].index
-
-            if gene_list is not None:
-                genes_indices = fc_data[fc_data[gene_column].isin(gene_list)].index
-
-                if indices.tolist():
-                    indices = indices.tolist() + genes_indices.tolist()
-
-                else:
-                    indices = genes_indices.tolist()
+                    annot_mask = fc_data[gene_column].isin(gene_list)
+                    indices = fc_data[annot_mask & mask].index
 
             sns.scatterplot(x=fc_data[i][indices],
                             y=pv_data[i][indices],
-                            color='lightblue')
-
+                            color='lightblue',
+                            ax=axes,)
+        
             # annotation
-            if indices:
+            if indices.any():
                 texts = [
                     axes.text(
                         fc_data[i][idx],
@@ -281,9 +233,6 @@ class Visualizer:
                 adjust_text(
                     texts, arrowprops=dict(arrowstyle="-", color="black"), ax=axes
                 )
-
-            else:
-                pass
 
             sample_annot = i.split("/")
             x_min = fc_data[i].min()
@@ -311,7 +260,7 @@ class Visualizer:
             if filepath:
                 fig.savefig(filepath, bbox_inches="tight", transparent=True)
 
-    def sign_prots_plot(self, normalized=False, figsize=(8, 5), savefig=False):
+    def sign_prots_plot(self, qv_data, normalized=False, figsize=(8, 5), savefig=False):
         """Plot number of significant proteins.
 
         Parameters
@@ -329,10 +278,10 @@ class Visualizer:
         -------
         """
 
-        sign_data = (self.qv_data.select_dtypes("float") < 0.05).sum(axis=0)
+        sign_data = (qv_data.select_dtypes("float") < 0.05).sum(axis=0)
         norm_sign_data = (
-            (self.qv_data.select_dtypes("float") < 0.05).sum(axis=0)
-            / self.qv_data.shape[0]
+            (qv_data.select_dtypes("float") < 0.05).sum(axis=0)
+            / qv_data.shape[0]
         ) * 100
         x = [textwrap.fill(i, 8) for i in sign_data.index]
         plt.figure(figsize=figsize)
@@ -351,6 +300,9 @@ class Visualizer:
 
     def int_volcano_plot(
         self,
+        fc_data,
+        pv_data,
+        qv_data,
         n_rows,
         n_cols,
         height,
@@ -362,27 +314,27 @@ class Visualizer:
         save=False,
         filename="int_volcano_plot.html",
     ):
-        indices = self.fc_data[self.fc_data["Genes"].isin(annot_genes)].index.to_list()
+        indices = fc_data[fc_data["Genes"].isin(annot_genes)].index.to_list()
 
         fig = make_subplots(rows=n_rows, cols=n_cols)
 
         for i, col_name in enumerate(
-            self.fc_data.select_dtypes(float).columns.tolist(), start=1
+            fc_data.select_dtypes(float).columns.tolist(), start=1
         ):
             # Create a list of colors based on the qv and fc values
             color_list = []
             fc_indices = []
 
-            for idx in np.arange(self.fc_data.shape[0]):
+            for idx in np.arange(fc_data.shape[0]):
                 if (
-                    self.qv_data.loc[idx, col_name] < 0.05
-                    and self.fc_data.loc[idx, col_name] > 0
+                    qv_data.loc[idx, col_name] < 0.05
+                    and fc_data.loc[idx, col_name] > 0
                 ):
                     color_list.append("lightcoral")
 
                 elif (
-                    self.qv_data.loc[idx, col_name] < 0.05
-                    and self.fc_data.loc[idx, col_name] < 0
+                    qv_data.loc[idx, col_name] < 0.05
+                    and fc_data.loc[idx, col_name] < 0
                 ):
                     color_list.append("cornflowerblue")
 
@@ -392,42 +344,42 @@ class Visualizer:
             # Create an annotation list based on fold change cutoff
             if qv_cutoff is True:
                 if upper_fc_cutoff is not None and lower_fc_cutoff is None:
-                    fc_indices = self.fc_data[
-                        (self.qv_data[col_name] < 0.05)
-                        & (self.fc_data[col_name] > upper_fc_cutoff)
+                    fc_indices = fc_data[
+                        (qv_data[col_name] < 0.05)
+                        & (fc_data[col_name] > upper_fc_cutoff)
                     ].index.to_list()
 
                 elif lower_fc_cutoff is not None and upper_fc_cutoff is None:
-                    fc_indices = self.fc_data[
-                        (self.qv_data[col_name] < 0.05)
-                        & (self.fc_data[col_name] < lower_fc_cutoff)
+                    fc_indices = fc_data[
+                        (qv_data[col_name] < 0.05)
+                        & (fc_data[col_name] < lower_fc_cutoff)
                     ].index.to_list()
 
                 elif lower_fc_cutoff is not None and upper_fc_cutoff is not None:
-                    fc_indices = self.fc_data[
-                        (self.qv_data[col_name] < 0.05)
+                    fc_indices = fc_data[
+                        (qv_data[col_name] < 0.05)
                         & (
-                            (self.fc_data[col_name] > upper_fc_cutoff)
-                            | (self.fc_data[col_name] < lower_fc_cutoff)
+                            (fc_data[col_name] > upper_fc_cutoff)
+                            | (fc_data[col_name] < lower_fc_cutoff)
                         )
                     ].index.to_list()
 
             if qv_cutoff is False:
                 if upper_fc_cutoff is not None and lower_fc_cutoff is None:
-                    fc_indices = self.fc_data[
-                        (self.fc_data[col_name] > upper_fc_cutoff)
+                    fc_indices = fc_data[
+                        (fc_data[col_name] > upper_fc_cutoff)
                     ].index.to_list()
 
                 elif lower_fc_cutoff is not None and upper_fc_cutoff is None:
-                    fc_indices = self.fc_data[
-                        (self.fc_data[col_name] < lower_fc_cutoff)
+                    fc_indices = fc_data[
+                        (fc_data[col_name] < lower_fc_cutoff)
                     ].index.to_list()
 
                 elif lower_fc_cutoff is not None and upper_fc_cutoff is not None:
-                    fc_indices = self.fc_data[
+                    fc_indices = fc_data[
                         (
-                            (self.fc_data[col_name] > upper_fc_cutoff)
-                            | (self.fc_data[col_name] < lower_fc_cutoff)
+                            (fc_data[col_name] > upper_fc_cutoff)
+                            | (fc_data[col_name] < lower_fc_cutoff)
                         )
                     ].index.to_list()
 
@@ -438,15 +390,15 @@ class Visualizer:
             text = [
                 gene + ", " + description
                 for gene, description in zip(
-                    self.fc_data["Genes"], self.fc_data["First.Protein.Description"]
+                    fc_data["Genes"], fc_data["First.Protein.Description"]
                 )
             ]
 
             # Add the scatter plots to the subplots layout
             fig.add_trace(
                 go.Scatter(
-                    x=self.fc_data[col_name],
-                    y=self.pv_data[col_name],
+                    x=fc_data[col_name],
+                    y=pv_data[col_name],
                     mode="markers",
                     marker=dict(color=color_list),
                     text=text,
@@ -457,8 +409,8 @@ class Visualizer:
 
             fig.add_trace(
                 go.Scatter(
-                    x=self.fc_data.loc[indices + fc_indices, col_name],
-                    y=self.pv_data.loc[indices + fc_indices, col_name],
+                    x=fc_data.loc[indices + fc_indices, col_name],
+                    y=pv_data.loc[indices + fc_indices, col_name],
                     mode="markers",
                     marker=dict(color="lightblue"),
                 ),
@@ -470,9 +422,9 @@ class Visualizer:
             for idx in indices + fc_indices:
                 fig.add_annotation(
                     dict(
-                        x=self.fc_data.loc[idx, col_name],
-                        y=self.pv_data.loc[idx, col_name],
-                        text=self.fc_data.loc[idx, "Genes"],
+                        x=fc_data.loc[idx, col_name],
+                        y=pv_data.loc[idx, col_name],
+                        text=fc_data.loc[idx, "Genes"],
                         font={"color": "black", "size": 12},
                         xref=f"x{i}",  # use proper xref
                         yref=f"y{i}",  # use proper yref
@@ -481,9 +433,9 @@ class Visualizer:
                     col=col,
                 )
 
-            y_max = self.pv_data[col_name].max()
-            x_max = self.fc_data[col_name].max()
-            x_min = self.fc_data[col_name].min()
+            y_max = pv_data[col_name].max()
+            x_max = fc_data[col_name].max()
+            x_min = fc_data[col_name].min()
 
             for coord, sample in zip([x_max, x_min], col_name.split("/")):
                 fig.add_annotation(
@@ -513,7 +465,7 @@ class Visualizer:
             hoverlabel=dict(bgcolor="white", font_size=16),
         )
         fig.update_traces(marker=dict(size=8), selector=dict(mode="markers"))
-        if save == True:
+        if save:
             # Save the plot as an HTML file
             pio.write_html(fig, f"{filename}")
 
