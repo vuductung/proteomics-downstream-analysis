@@ -510,3 +510,69 @@ class Visualizer:
             adjust_text(texts, arrowprops=dict(arrowstyle="-", color="black"))
 
         plt.show()
+
+    
+    def create_pie_chart(self, data, title, colors=None):
+
+        """
+        Create a pie chart. Input data should
+        be a Series with the categories as index.
+        Like this: 
+        data = pd.Series([10, 20, 30], index=['A', 'B', 'C'])
+
+        Parameters
+        ----------
+        data : pd.Series
+            A Series with the categories as index.
+        
+        title : str
+            Title of the pie chart.
+        
+        colors : list
+            List of colors to use in the pie chart. 
+            If None, a default color palette is used. 
+            Default is None.
+
+        Returns
+        -------
+        fig, ax : tuple
+            A tuple with the figure and axis objects.
+        """
+
+        sizes = data.values
+        labels = data.index
+        
+        # Create a consistent color palette
+        if colors is None:
+            colors = sns.color_palette(n_colors=len(labels))
+        
+        fig, ax = plt.subplots(figsize=(8, 6))
+        
+        # Function to format the labels with percentages and absolute values
+        def make_autopct(values):
+            def my_autopct(pct):
+                total = sum(values)
+                val = int(round(pct*total/100.0))
+                return f'{pct:.1f}%\n({val:d})'
+            return my_autopct
+        
+        # Create the pie chart
+        wedges, _, autotexts = ax.pie(sizes, labels=None, colors=colors,
+                                        autopct=make_autopct(sizes),
+                                        startangle=90, pctdistance=0.75,
+                                        wedgeprops=dict(edgecolor='black', linewidth=1.5))
+        
+        # Enhance the appearance of annotations
+        plt.setp(autotexts, size=8, weight="bold")
+        
+        # Add a title
+        ax.set_title(title, size=16, fontweight='bold')
+        
+        # Add a legend
+        ax.legend(wedges, labels, title="Categories", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
+        
+        # Adjust layout to make room for the legend
+        plt.tight_layout()
+        
+        return fig, ax
+
