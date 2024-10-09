@@ -9,6 +9,10 @@ from tqdm import tqdm
 from scipy import stats
 from sklearn.preprocessing import LabelEncoder
 
+from sklearn.preprocessing import StandardScaler
+from statsmodels.stats.multitest import fdrcorrection
+import statsmodels.api as sm
+from scipy.stats import combine_pvalues
 
 pval_transf = lambda x: -np.log10(x)
 int_transf = lambda x: np.log2(x)
@@ -148,7 +152,7 @@ class Confounder:
             # remove missing values and check if there is at least one
             # sample per confounder
             for group in range(X.shape[1]):
-                if self._check_for_min_samples_per_group(X, y_idx, group):
+                if self._check_for_min_samples_per_group(X, y_idx):
                     
                     X_masked = X[self.mask]
                     y_masked = y_idx[self.mask]
@@ -223,3 +227,128 @@ class Confounder:
 
         return pvals
 
+
+    def linear_regression_with_confounder(self, protein_intensity_data, confounders, iterations, variable,):
+
+        """
+        Perform linear regression with confounder variables.
+
+        Parameters
+        ----------
+        protein_intensity_data : pd.DataFrame
+            pd.DataFrame containing protein intensity data.
+            Index has to be the gene names, columns have to be the samples.
+            Protein intensity has to be log2 transformed.
+        confounders : pd.DataFrame
+            Dataframe containing confounder variables.
+            Index has to be the sample names,
+            columns have to be the confounder variables.
+            Confounders have to be all numerical values,
+            and standardization is not required. Will
+            be done internally.
+        iterations : int
+            Number of iterations to perform.
+        variable : str
+            Name of the confounder variable.
+
+        Returns
+        -------
+        coef_data : pd.DataFrame
+            Dataframe containing coefficients.
+        pval_data : pd.DataFrame        
+            Dataframe containing p-values.
+        qval_data : pd.DataFrame    
+            Dataframe containing q-values.
+        """
+
+        # remove missing values
+        finite_mask = np.isfinite(confounders).all(axis=1).values # create mask to remove missing values from input
+        selected_confounders = confounders[finite_mask].reset_index(drop=True)
+        genes = protein_intensity_data.index
+        protein_intensity_data = protein_intensity_data.T[finite_mask].reset_index(drop=True).values
+        
+        seeds = []
+        three_d_pvalues = []
+        three_d_betas = []
+
+        for it in tqdm(range(iterations)):
+            seeds.append(it)
+
+            np.random.seed(it)
+
+            # check if the size of sample > pos/neg classes
+            pos_class = selected_confounders[selected_confounders[variable]==1]
+            non_pos_class = selected_confounders[selected_confounders[variable]==0]
+            pos_class_size = pos_class.shape[0]
+            non_pos_class_size = non_pos_class.shape[0]
+
+            sample_size = np.min([pos_class_size, non_pos_class_size])
+            pos_class_sample = pos_class.sample(sample_size)
+            non_pos_class_sample = non_pos_class.sample(sample_size)
+
+            X_sampled = pd.concat([non_pos_class_sample, pos_class_sample])
+
+            # sample X and y based on the indices
+            sampled_indices = X_sampled.index
+            y_sampled = protein_intensity_data[sampled_indices]
+
+            # Ensure correct initialization shape
+            pvals = []
+            coefs = []
+
+            confounder_cols = X_sampled.columns
+
+            scaler = StandardScaler()
+            y = np.nan_to_num(y_sampled, 0)
+            X_std = scaler.fit_transform(X_sampled)
+            X_const = sm.add_constant(X_std)
+
+            for protein in range(y.shape[1]):
+
+                # remove missing values
+                finite_mask = np.isfinite(y[:, protein])
+                y_filt = y[finite_mask,  protein]
+                X_filt = X_const[finite_mask]
+                
+                try:
+                    # Fit the model
+                    model = sm.OLS(y_filt, X_filt).fit()
+                    # Store the p-values and coefficients
+                    pvals.append(model.pvalues)
+                    coefs.append(model.params)
+
+                except Exception as e: # for any kind of error, set all to nan (will be updated later)
+                    pvals.append(np.full((4, ) ,np.nan))
+                    coefs.append(np.full((4, ) ,np.nan))
+
+            pvalues = np.vstack(pvals)[:, :, np.newaxis]
+            betas = np.vstack(coefs)[:, :, np.newaxis]
+
+            three_d_pvalues.append(pvalues)
+            three_d_betas.append(betas)
+
+        pvals_concat = np.concatenate(three_d_pvalues, axis=2)
+        betas_concat = np.concatenate(three_d_betas, axis=2)
+
+        # pvals_combined = np.median(pvals_concat, axis=2)
+        pvals_combined = combine_pvalues(pvals_concat, method="tippett", axis=2)[1]
+        betas_combined = np.median(betas_concat, axis=2)
+
+        # PVALUE ADJUSTMENT
+        qvals = np.full(pvals_combined.flatten().shape, np.nan)
+        mask = np.isfinite(pvals_combined.flatten()) 
+        qvals[mask] = fdrcorrection(pvals_combined.flatten()[mask])[1]
+        qvalues = qvals.reshape(pvals_combined.shape)
+
+        # CREATE DATAFRAME FOR PVALUE, COEFFICIENTS AND QVALUES 
+        cols = np.array(confounder_cols) + "/" + np.array("no " + confounder_cols)
+
+        pval_data = pd.DataFrame(data=-np.log10(pvals_combined)[:, 1:], columns=cols)
+        coef_data = pd.DataFrame(data=betas_combined[:, 1:], columns=cols)
+        qval_data = pd.DataFrame(data=qvalues[:, 1:], columns=cols)
+
+        pval_data["Genes"] = genes
+        coef_data["Genes"] = genes
+        qval_data["Genes"] = genes
+
+        return coef_data, pval_data, qval_data
