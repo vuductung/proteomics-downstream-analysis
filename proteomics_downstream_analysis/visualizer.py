@@ -13,7 +13,7 @@ import streamlit as st
 from .utils import is_jupyter_notebook
 
 import plotly.io as pio
-
+from scipy.stats import pearsonr
 
 class Visualizer:
     """Visualizer class for plotting."""
@@ -37,6 +37,7 @@ class Visualizer:
         gene_column="Genes",
         qvalue=True,
         palette=None,
+        title=None
     ):
         """
         Plot a volcano plot.
@@ -75,6 +76,8 @@ class Visualizer:
 
         fig, ax = plt.subplots(n_rows, n_cols, figsize=figsize, layout="tight")
 
+        if title:
+            fig.suptitle(title)
         cols = fc_data.select_dtypes("float").columns
         axs = np.array(ax).flatten()
         indices = False
@@ -171,7 +174,7 @@ class Visualizer:
                 sns.scatterplot(
                     x=fc_data[sign_mask & mask & pos_fc_mask][i],
                     y=pv_data[sign_mask & mask & pos_fc_mask][i],
-                    color=palette[0],
+                    color="lightgrey", #palette[0],
                     ax=axes,
                     linewidth=0,
                 )
@@ -185,7 +188,7 @@ class Visualizer:
                     y=pv_data[
                        sign_mask & mask & neg_fc_mask
                     ][i],
-                    color=palette[1],
+                    color="lightgrey", #palette[1],
                     ax=axes,
                     linewidth=0,
                 )
@@ -575,4 +578,50 @@ class Visualizer:
         plt.tight_layout()
         
         return fig, ax
+    
+    def regression_plot(self, x, y, fc_data, cutoff_data, gene_list, pval):
+
+        gene_list_mask = fc_data["Genes"].isin(gene_list)
+
+        if pval:
+            cutoff_mask = (cutoff_data[[x, y]].select_dtypes(float)>1.3).all(axis=1)
+        
+        else:
+            cutoff_mask = (cutoff_data[[x, y]].select_dtypes(float)<0.05).all(axis=1)
+
+        plt.figure(figsize=(2.5, 2.5))
+
+        plt.axhline(y=0, color='lightgrey', linestyle='--')
+        plt.axvline(x=0, color='lightgrey', linestyle='--')
+
+        sns.scatterplot(data=fc_data,
+                    x=x,
+                    y=y,
+                    color='lightgrey',
+                    linewidth=0,
+                    )
+
+        sns.regplot(data=fc_data[cutoff_mask],
+                x=x,
+                y=y,
+                color='red',
+                ci=False,
+                truncate=False,
+                line_kws={'linestyle': '--',
+                        'linewidth':2},
+                )
+        sns.scatterplot(x=fc_data[x][gene_list_mask],
+                    y=fc_data[y][gene_list_mask],
+                    facecolors= 'none',
+                    linewidth=1,
+                    edgecolor="black")
+
+        plt.title(f"Pearson correlation: {pearsonr(fc_data[cutoff_mask][x], fc_data[cutoff_mask][y])[0]:.2f}")
+
+        indices = fc_data[gene_list_mask].index
+        texts =  [plt.text(fc_data[x][idx], fc_data[y][idx], fc_data['Genes'][idx], ha='center', va='center', fontsize=8) for idx in indices]
+        adjust_text(texts, arrowprops = dict(arrowstyle = '-', color = 'black'), )
+
+        plt.xlabel(f"log2 fold change \n ({x})")
+        plt.ylabel(f"log2 fold change \n ({y})")
 
