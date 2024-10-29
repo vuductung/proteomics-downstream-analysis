@@ -163,9 +163,8 @@ class Analysis(MultiLevelData, DimensionalityReduction,
         """
         del self.datasets[index]
 
-    def from_spectronaut_to_diann(self, filepath):
+    def from_spectronaut_to_diann(self, data):
         
-        data = pd.read_csv(filepath)
         data = data.filter(regex='Groups|UniProtIds|ProteinNames|Genes|ProteinDescriptions|raw.PG.Quantity')
 
         # rename columns
@@ -187,6 +186,8 @@ class Analysis(MultiLevelData, DimensionalityReduction,
         # introduce np.nan
         data = data.replace('Filtered', np.nan)
         self.data = data
+
+        return data
 
     def reorder_columns(self, data):
 
