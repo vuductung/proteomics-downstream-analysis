@@ -7,6 +7,7 @@ from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 from scipy import stats
+from sklearn.feature_selection import mutual_info_classif
 
 import pandas as pd
 from tqdm import tqdm
@@ -23,46 +24,55 @@ class MachineLearning:
     def __init__(self):
         self.scorings = ["roc_auc", "accuracy", "precision", "recall", "f1"]
 
-    def plot_confusion_matrix(self, predicted_labels_list, y_test_list, figsize=(2, 2)):
-        """
-        This function prints and plots the confusion matrix.
-        """
+    def mutual_info_classif_with_random_state(self, X, y, random_state=13):
+        return mutual_info_classif(X, y, random_state=random_state)
 
+    def plot_confusion_matrix(self, predicted_labels_list, y_test_list, figsize=(2, 2.2), title=None, classes=[0, 1]):
+
+        """
+        This function prints and plots the confusion matrix using seaborn's heatmap with black edges.
+        """
         cnf_matrix = confusion_matrix(y_test_list, predicted_labels_list)
-        np.set_printoptions(precision=2)
-
+        # np.set_printoptions(precision=2)
+        
         # Plot normalized confusion matrix
         plt.figure(figsize=figsize)
-        self._generate_confusion_matrix(cnf_matrix, classes=[0, 1])
-
+        if title is not None:
+            plt.title(title)
+        
+        return self._generate_confusion_matrix(cnf_matrix, classes=classes)
+    
     def _generate_confusion_matrix(self, cnf_matrix, classes):
         cnf_matrix_raw = cnf_matrix.copy()
-        cnf_matrix = cnf_matrix.astype("float") / cnf_matrix.sum(axis=1)[:, np.newaxis]
-        plt.imshow(cnf_matrix, interpolation="nearest", cmap=plt.get_cmap("Blues"))
-
-        tick_marks = np.arange(len(classes))
-        plt.xticks(tick_marks, classes, rotation=45)
-        plt.yticks(tick_marks, classes)
-
-        thresh = cnf_matrix.max() / 2.0
-
-        for i, j in itertools.product(
-            range(cnf_matrix.shape[0]), range(cnf_matrix.shape[1])
-        ):
-            plt.text(
-                j,
-                i,
-                f"{cnf_matrix_raw[i , j]} {cnf_matrix[i , j]*100:.2f}%",
+        cnf_matrix_norm = cnf_matrix.astype("float") / cnf_matrix.sum(axis=1)[:, np.newaxis]
+        
+        # Create a dataframe for better labeling
+        df_cm = pd.DataFrame(cnf_matrix_norm, index=classes, columns=classes)
+        
+        # Generate heatmap with black edges
+        # sns.set(font_scale=1.2)
+        heatmap = sns.heatmap(df_cm, annot=False, cmap="Blues", vmin=0, vmax=1, fmt='.2f',
+                              linewidths=1, linecolor='black', cbar=False)
+        
+        # Add text annotations
+        for i, j in itertools.product(range(cnf_matrix.shape[0]), range(cnf_matrix.shape[1])):
+            heatmap.text(
+                j + 0.5, 
+                i + 0.5, 
+                f"{cnf_matrix_raw[i, j]}\n{cnf_matrix_norm[i, j]*100:.1f}%",
                 horizontalalignment="center",
-                color="white" if cnf_matrix[i, j] > thresh else "black",
-                size=8,
+                verticalalignment="center",
+                color="white" if cnf_matrix_norm[i, j] > 0.5 else "black",
+                fontsize=6
             )
-
-        plt.tight_layout()
+        
         plt.ylabel("True label")
         plt.xlabel("Predicted label")
-
-        return cnf_matrix
+        
+        # Ensure the plot cuts off cleanly at the edges
+        plt.tight_layout()
+        
+        return plt.gcf()
 
     def cross_validate_w_no_of_features(self, model, cv, x_train, y_train, scorings):
         """
