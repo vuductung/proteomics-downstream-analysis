@@ -169,7 +169,7 @@ class Statistics():
         self.f_stat_data = f_stat_data
         self.anova_pv_data = anova_pv_data
 
-    def student_ttest(self, comparisons, return_output =False):
+    def student_ttest(self, data, comparisons, return_output =False):
     
         """
         Unpaired two tailed student's t-test with BH pvalue
@@ -204,30 +204,30 @@ class Statistics():
         for a, b in comparisons:
             
             # T test for each row pair.
-            t_stats, pvalues = stats.ttest_ind(a=self.data[a], b=self.data[b], axis=1, nan_policy='omit')
+            t_stats, pvalues = stats.ttest_ind(a=data[a], b=data[b], axis=1, nan_policy='omit')
 
             t_stat_data[f'{a}/{b}'] = t_stats
 
             pv_data[f'{a}/{b}'] = - np.log10(pvalues)
 
             # Mean difference for each row.
-            fc_data[f'{a}/{b}'] = self._fold_change(self.data[a], self.data[b])
+            fc_data[f'{a}/{b}'] = self._fold_change(data[a], data[b])
             
             # 95% confidence interval for each row.
-            ci_data[f'{a}/{b}'] = self._ttest_conf_int(self.data[a], self.data[b])
+            ci_data[f'{a}/{b}'] = self._ttest_conf_int(data[a], data[b])
 
             # Cohens d for each row.
-            cohensd_data[f'{a}/{b}'] = self._cohensd(self.data[a], self.data[b])
+            cohensd_data[f'{a}/{b}'] = self._cohensd(data[a], data[b])
 
             # bh adjusted pvalue 
             qv_data[f'{a}/{b}'] = fdrcorrection(pvalues)[1]
 
-        self.fc_data = self.data.select_dtypes('string').merge(fc_data, left_index = True, right_index = True)
-        self.pv_data = self.data.select_dtypes('string').merge(pv_data, left_index = True, right_index = True)
-        self.qv_data = self.data.select_dtypes('string').merge(qv_data, left_index = True, right_index = True)
-        self.t_stat_data = self.data.select_dtypes('string').merge(t_stat_data, left_index = True, right_index = True)
-        self.ci_data = self.data.select_dtypes('string').merge(ci_data, left_index = True, right_index = True)
-        self.cohensd_data = self.data.select_dtypes('string').merge(cohensd_data, left_index = True, right_index = True)
+        self.fc_data = data.select_dtypes('string').merge(fc_data, left_index = True, right_index = True)
+        self.pv_data = data.select_dtypes('string').merge(pv_data, left_index = True, right_index = True)
+        self.qv_data = data.select_dtypes('string').merge(qv_data, left_index = True, right_index = True)
+        self.t_stat_data = data.select_dtypes('string').merge(t_stat_data, left_index = True, right_index = True)
+        self.ci_data = data.select_dtypes('string').merge(ci_data, left_index = True, right_index = True)
+        self.cohensd_data = data.select_dtypes('string').merge(cohensd_data, left_index = True, right_index = True)
 
         if return_output == True:
             return self.fc_data, self.pv_data, self.qv_data, self.t_stat_data, self.ci_data, self.cohensd_data
