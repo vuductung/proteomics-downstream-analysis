@@ -18,11 +18,11 @@ class Loader():
         Read the statistics file
         """
 
-        path = os.join(self.filepath, self.fc)
+        path = os.path.join(self.filepath, self.fc)
         fc_data = pd.read_csv(path)
-        path = os.join(self.filepath, self.pv)
+        path = os.path.join(self.filepath, self.pv)
         pv_data = pd.read_csv(path)
-        path = os.join(self.filepath, self.qv)
+        path = os.path.join(self.filepath, self.qv)
         qv_data = pd.read_csv(path)
 
         return fc_data, pv_data, qv_data
