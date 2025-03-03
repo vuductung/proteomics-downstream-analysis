@@ -67,10 +67,16 @@ class DimensionalityReduction:
 
           # Standardizing the features
           x = StandardScaler().fit_transform(x)
-          pca = PCA()
+          pca = PCA(n_components=0.8)
           principalComponents = pca.fit_transform(x)
-          principalDf = pd.DataFrame(data = principalComponents[:, :2]
-                                   ,columns = ['principal component 1', 'principal component 2'])
+
+          # count numbers of components
+          n_components = pca.n_components_
+          
+          # create a list of column names
+          column_names = [f'principal component {i}' for i in range(1, n_components+1)]
+          principalDf = pd.DataFrame(data = principalComponents
+                                   ,columns = column_names)
 
           finalDf = pd.concat([principalDf, df[['target']]], axis = 1)
 
@@ -149,7 +155,7 @@ class DimensionalityReduction:
           sns.despine()
           plt.show()
 
-     def pca_plot(self, data, palette, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), kde=False, filepath=False):
+     def pca_plot(self, data, palette, n_rows=1, n_cols=1, titles=[''], figsize=(5, 5), kde=False, filepath=False, components=None):
 
           """
           Plot PCA for one or more datasets.
@@ -168,9 +174,9 @@ class DimensionalityReduction:
           figsize : tuple
                Figure size (Default value = (5,5)
 
-          savefig : bool
-               If True, save figure (Default value = False)
-
+          components : tuple
+               (Default value = None)
+               Components to plot.
           Returns
           -------
           matplotlib.pyplot.subplots
@@ -185,25 +191,29 @@ class DimensionalityReduction:
           fig, ax = plt.subplots(n_rows, n_cols, figsize=figsize)
 
           for data_set, axes, title in zip(pca_data, np.array(ax).flatten(), titles):
+               
+               x = [item for item in data_set[1].columns if components[0] in item][0]
+               y = [item for item in data_set[1].columns if components[1] in item][0]
+
                if kde:
                     sns.kdeplot(data=data_set[1],
-                              x='principal component 1',
-                              y='principal component 2',
+                              x=x,
+                              y=y,
                               hue='target',
                               levels=20,
                               linewidths=1,
                               ax=axes)
                else:
                     sns.scatterplot(data=data_set[1],
-                                   x='principal component 1',
-                                   y='principal component 2',
+                                   x=x,
+                                   y=y,
                                    hue='target',
                                    ax=axes, 
                                    palette=palette)
                     
                     pc1 = "%.2f" % (data_set[0].explained_variance_ratio_[0] * 100)
                     pc2 = "%.2f" % (data_set[0].explained_variance_ratio_[1] * 100)
-                    axes.set(xlabel=f'PC1 {pc1}%', ylabel=f'PC2 {pc2}%')
+                    axes.set(xlabel=f'{x} ({pc1}%)', ylabel=f'{y} ({pc2}%)')
                     axes.set_title(title)
                     plt.legend(title=None)
 
