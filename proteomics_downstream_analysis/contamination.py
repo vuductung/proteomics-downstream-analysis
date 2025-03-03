@@ -373,7 +373,6 @@ class ContaminationAnalysis:
             return np.where(master_mask)[0] + number_of_string_cols
 
     def contamination_outlier_plot(self, data, experimental=True, type="RBC"):
-        # compute the robust zscore to find outliers
         if experimental:
             groups = data.select_dtypes(float).columns.unique()
             len_groups = len(groups)
