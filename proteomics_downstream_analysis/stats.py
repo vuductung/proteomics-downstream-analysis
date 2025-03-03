@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 
@@ -317,4 +318,21 @@ class Statistics():
 
         self.summary_data = summary_data.copy()
     
-    
+    def save_stats(self, path):
+        
+        """
+        Save the statistical data to a csv file
+
+        Parameters
+        ----------
+        path : str
+            The path to save the file.
+        """
+        filepath = os.path.join(path, 'fc.csv')
+        self.fc_data.to_csv(filepath, index=False)
+
+        filepath = os.path.join(path, 'pv.csv')
+        self.pv_data.to_csv(filepath, index=False)
+
+        filepath = os.path.join(path, 'qv.csv')
+        self.qv_data.to_csv(filepath, index=False)
