@@ -1,6 +1,0 @@
-README.md
-setup.py
-proteomics_downsream_analysis.egg-info/PKG-INFO
-proteomics_downsream_analysis.egg-info/SOURCES.txt
-proteomics_downsream_analysis.egg-info/dependency_links.txt
-proteomics_downsream_analysis.egg-info/top_level.txt

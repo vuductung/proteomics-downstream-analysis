@@ -102,6 +102,7 @@ class Visualizer:
                         alpha=0.5,
                         ax=axes,
                         linewidth=0,
+                        rasterized=True
                     )
 
                     # plot the significant datapoints with pos fold change
@@ -117,6 +118,7 @@ class Visualizer:
                         color=palette[1],
                         ax=axes,
                         linewidth=0,
+                        rasterized=True
                     )
 
                     # plot the significant datapoints with neg fold change
@@ -131,6 +133,7 @@ class Visualizer:
                         color=palette[0],
                         ax=axes,
                         linewidth=0,
+                        rasterized=True,
                     )
 
                     axes.set_xlabel("log2 fold change", fontsize=10)
@@ -167,6 +170,7 @@ class Visualizer:
                     alpha=0.5,
                     ax=axes,
                     linewidth=0,
+                    rasterized=True
                 )
                 # plot all significant datapoints with pos fold change
                 sign_mask = pv_data[i] > 1.3
@@ -177,6 +181,7 @@ class Visualizer:
                     color="lightgrey", #palette[0],
                     ax=axes,
                     linewidth=0,
+                    rasterized=True
                 )
 
                 # plot all significant datapoints with neg fold change
@@ -191,6 +196,7 @@ class Visualizer:
                     color="lightgrey", #palette[1],
                     ax=axes,
                     linewidth=0,
+                    rasterized=True
                 )
 
                 axes.set_xlabel("log2 fold change", fontsize=10)
@@ -218,7 +224,8 @@ class Visualizer:
             sns.scatterplot(x=fc_data[i][indices],
                             y=pv_data[i][indices],
                             color='lightblue',
-                            ax=axes,)
+                            ax=axes,
+                            rasterized=True)
         
             # annotation
             if indices.any():
@@ -234,7 +241,7 @@ class Visualizer:
                     for idx in set(indices)
                 ]
                 adjust_text(
-                    texts, arrowprops=dict(arrowstyle="-", color="black"), ax=axes
+                    texts, arrowprops=dict(arrowstyle="-", color="black", linewidth=0.5), ax=axes
                 )
 
             sample_annot = i.split("/")
@@ -579,22 +586,43 @@ class Visualizer:
         
         return fig, ax
     
-    def regression_plot(self, x, y, fc_data, cutoff_data, gene_list, pval):
+    def regression_plot(self, x, y, fc_data, cutoff_data, gene_list, pval, min=1, figsize=(8, 8)):
+
+        """
+        Create a regression plot with annotation.
+
+        Parameters
+        ----------
+        x : str
+            Column name for x-axis.
+        y : str
+            Column name for y-axis.
+        fc_data : pd.DataFrame
+            DataFrame with fold change data.
+        cutoff_data : pd.DataFrame
+            DataFrame with p-values or q-values.
+        gene_list : list
+            List of genes to annotate.
+        pval : bool
+            If True, p-values are used. If False, q-values are used.
+        min : int
+            Minimum number of significant datapoints/comparisons for regression line.
+            between 1 and 2. Default is 1.
+        """
 
         gene_list_mask = fc_data["Genes"].isin(gene_list)
 
         if pval:
-            cutoff_mask = (cutoff_data[[x, y]].select_dtypes(float)>1.3).all(axis=1)
+            cutoff_mask = (cutoff_data[[x, y]].select_dtypes(float)>1.3).sum(axis=1) >= min
         
         else:
-            cutoff_mask = (cutoff_data[[x, y]].select_dtypes(float)<0.05).all(axis=1)
+            cutoff_mask = (cutoff_data[[x, y]].select_dtypes(float)<0.05).sum(axis=1)>= min
 
-        plt.figure(figsize=(2.5, 2.5))
-
+        plt.figure(figsize=figsize)
         plt.axhline(y=0, color='lightgrey', linestyle='--')
         plt.axvline(x=0, color='lightgrey', linestyle='--')
 
-        sns.scatterplot(data=fc_data,
+        sns.scatterplot(data=fc_data[~cutoff_mask],
                     x=x,
                     y=y,
                     color='lightgrey',
@@ -604,7 +632,7 @@ class Visualizer:
         sns.regplot(data=fc_data[cutoff_mask],
                 x=x,
                 y=y,
-                color='red',
+                color='lightblue',
                 ci=False,
                 truncate=False,
                 line_kws={'linestyle': '--',
@@ -613,14 +641,14 @@ class Visualizer:
         sns.scatterplot(x=fc_data[x][gene_list_mask],
                     y=fc_data[y][gene_list_mask],
                     facecolors= 'none',
-                    linewidth=1,
+                    linewidth=0.5,
                     edgecolor="black")
 
         plt.title(f"Pearson correlation: {pearsonr(fc_data[cutoff_mask][x], fc_data[cutoff_mask][y])[0]:.2f}")
 
         indices = fc_data[gene_list_mask].index
         texts =  [plt.text(fc_data[x][idx], fc_data[y][idx], fc_data['Genes'][idx], ha='center', va='center', fontsize=8) for idx in indices]
-        adjust_text(texts, arrowprops = dict(arrowstyle = '-', color = 'black'), )
+        adjust_text(texts, arrowprops = dict(arrowstyle = '-', color = 'black', linewidth=0.5), )
 
         plt.xlabel(f"log2 fold change \n ({x})")
         plt.ylabel(f"log2 fold change \n ({y})")
