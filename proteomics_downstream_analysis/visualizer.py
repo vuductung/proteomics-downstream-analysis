@@ -223,9 +223,12 @@ class Visualizer:
 
             sns.scatterplot(x=fc_data[i][indices],
                             y=pv_data[i][indices],
-                            color='lightblue',
+                            color='black',
                             ax=axes,
-                            rasterized=True)
+                            rasterized=True, 
+                            facecolors='none',
+                            linewidth=0.5,
+                            edgecolor="black")
         
             # annotation
             if indices.any():
