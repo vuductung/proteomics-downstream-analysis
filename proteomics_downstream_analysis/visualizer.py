@@ -589,7 +589,7 @@ class Visualizer:
         
         return fig, ax
     
-    def regression_plot(self, x, y, fc_data, cutoff_data, gene_list, pval, min=1, figsize=(8, 8)):
+    def regression_plot(self, x, y, fc_data, cutoff_data, gene_list, pval, min=1, figsize=(8, 8), title=None):
 
         """
         Create a regression plot with annotation.
@@ -622,6 +622,16 @@ class Visualizer:
             cutoff_mask = (cutoff_data[[x, y]].select_dtypes(float)<0.05).sum(axis=1)>= min
 
         plt.figure(figsize=figsize)
+
+        if title:
+            plt.title(title)
+        plt.text(fc_data[x].min()-0.3, fc_data[y].min()-0.3,
+                 f"Pearson r: {pearsonr(fc_data[cutoff_mask][x], fc_data[cutoff_mask][y])[0]:.2f}",
+                 fontsize=8,
+                 ha='left',
+                 va='bottom',
+                 bbox=dict(boxstyle="round", fc="w", ec="black", alpha=0.3)
+                 )
         plt.axhline(y=0, color='lightgrey', linestyle='--')
         plt.axvline(x=0, color='lightgrey', linestyle='--')
 
@@ -646,8 +656,6 @@ class Visualizer:
                     facecolors= 'none',
                     linewidth=0.5,
                     edgecolor="black")
-
-        plt.title(f"Pearson correlation: {pearsonr(fc_data[cutoff_mask][x], fc_data[cutoff_mask][y])[0]:.2f}")
 
         indices = fc_data[gene_list_mask].index
         texts =  [plt.text(fc_data[x][idx], fc_data[y][idx], fc_data['Genes'][idx], ha='center', va='center', fontsize=8) for idx in indices]
