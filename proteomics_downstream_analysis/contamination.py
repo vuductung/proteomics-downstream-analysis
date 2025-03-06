@@ -148,7 +148,7 @@ class ContaminationAnalysis:
         if filepath:
             fig.savefig(filepath, bbox_inches="tight", transparent=True)
             
-    def _compute_zscore_outliers(self, data, iqr_multiplier=3):
+    def _compute_zscore_outliers(self, data, iqr_multiplier=1.5):
         # sort data
         data = self._sort_by_column_names(data)
 
