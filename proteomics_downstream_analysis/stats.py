@@ -318,7 +318,7 @@ class Statistics():
 
         self.summary_data = summary_data.copy()
     
-    def save_stats(self, path):
+    def save_stats(self, path=None):
         
         """
         Save the statistical data to a csv file
@@ -328,6 +328,10 @@ class Statistics():
         path : str
             The path to save the file.
         """
+
+        if path is None:
+            path = "../data/stats"
+            os.makedirs(path)
         filepath = os.path.join(path, 'fc.csv')
         self.fc_data.to_csv(filepath, index=False)
 
